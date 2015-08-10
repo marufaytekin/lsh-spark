@@ -7,7 +7,7 @@
 .cache
 .history
 .lib/
-data/*.data
+data/*
 dist/*
 target/
 lib_managed/
