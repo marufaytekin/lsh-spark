@@ -7,7 +7,6 @@
 .cache
 .history
 .lib/
-data/*.data
 dist/*
 target/
 lib_managed/
@@ -17,8 +16,7 @@ project/plugins/project/
 
 # Scala-IDE specific
 .scala_dependencies
-/data/ml-1m.data
 .worksheet
-.idea/*
-*.iml
+.idea
+
 
