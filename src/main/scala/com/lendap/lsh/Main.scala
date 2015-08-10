@@ -19,6 +19,9 @@ object Main {
     val conf = new SparkConf().setAppName("LSH").setMaster("local[4]")
     val sc = new SparkContext(conf)
     val data = sc.textFile(dataFile).cache()
+    //val data : org.apache.spark.rdd.RDD[(Long, Long, Double)] =
+    //  sc.objectFile(dataFile).repartition(8)
+    data.map(a => a)
     /*val pairs = data.map(line => line.split('\t'))
       .map(l => (l(0), 1))
       .reduceByKey(_ + _)
@@ -26,6 +29,13 @@ object Main {
       .map(x=> (x._2,x._1))
     pairs.collect.foreach(println)
     println(pairs.count)*/
+
+    //spark job setup
+
+    //read data file in as a RDD, partition RDD across <partitions> cores
+
+
+
 
     val m = 100 /** number of elements */
     val h = Hasher.create(m)
