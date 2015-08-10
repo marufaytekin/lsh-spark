@@ -1,20 +1,25 @@
 package com.lendap.lsh
 
+import org.apache.spark.mllib.linalg.SparseVector
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
-import org.apache.spark.mllib.linalg.SparseVector
+
 
 /**
- * Created by maytekin on 06.08.2015.
+ * Simple hashing function implements random hyperplane based hash functions described in
+ * http://www.cs.princeton.edu/courses/archive/spring04/cos598B/bib/CharikarEstim.pdf
+ * r is a random vector. Hash function h_r(u) operates as follows:
+ * if r.u < 0 //dot product of two vectors
+ *    h_r(u) = 0
+ *  else
+ *    h_r(u) = 1
  */
-class Hasher(a: SparseVector) extends Serializable {
+class Hasher(r: Array[Double]) extends Serializable {
 
-  /** hash SparseVector v with random sparse vector a and return 0 or 1 */
-  def hash(v : SparseVector) : Int = {
-    val a1 = a.indices.toList
-    val a2 = v.indices.toList
-    val indices = a1.intersect(a2)
-    val hashVal = indices.map(i => v(i) * a(i)).sum
+  /** hash SparseVector v with random vector r */
+  def hash(u : SparseVector) : Int = {
+    val rVec: Array[Double] = u.indices.map(i => r(i))
+    val hashVal = (rVec zip u.values).map(_tuple => _tuple._1 * _tuple._2).sum
     if (hashVal > 0) 1 else 0
   }
 
@@ -22,15 +27,16 @@ class Hasher(a: SparseVector) extends Serializable {
 
 object Hasher {
 
-  def create (min: Int, max: Int, size: Int) =
-    new Hasher(randVector(min, max, size))
+  /** create a new instance providing size of the random vector Array [Double] */
+  def create (size: Int) = new Hasher(r(size))
 
-  /** create a random vector whose elements randomly generated integers in [min,max] range */
-  def randVector(min: Int, max: Int, size: Int) : SparseVector = {
+  /** create a random vector whose whose components are -1 and +1 */
+  def r(size: Int) : Array[Double] = {
     val buf = new ArrayBuffer[Double]
+    val rnd = new Random()
     for (i <- 0 until size)
-      buf += min + new Random().nextInt(max - min + 1)
-    new SparseVector(buf.size, new Range(0, size, 1).toArray, buf.toArray)
+      buf += (if (rnd.nextGaussian() < 0) -1 else 1)
+    buf.toArray
   }
 
 }
