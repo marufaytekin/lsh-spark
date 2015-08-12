@@ -1,7 +1,5 @@
 package com.lendap.lsh
 
-import java.time.format.DateTimeFormatter
-import java.util.Date
 
 import org.apache.spark.mllib.linalg.SparseVector
 import scala.collection.mutable.ArrayBuffer
