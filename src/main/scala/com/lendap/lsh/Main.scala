@@ -16,6 +16,7 @@ import org.apache.spark.mllib.recommendation.ALS
 object Main {
 
   def main(args: Array[String]) {
+    val numPartitions = 8
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
       .setAppName("LSH")
@@ -46,8 +47,8 @@ object Main {
     //val m = 100 /** number of elements */
     val maxElem = items.max()
     val size = items.count()
-    val randRDD = RandomRDDs.normalRDD(sc, maxElem, 8)
-    val h = Hasher.create(randRDD)
+
+    val h = Hasher.create(maxElem, sc, numPartitions)
 
     //val i = Array(0, 2, 3, 6)
     //val v = Array(1.0, -4.0, 6.0, -20.0)
