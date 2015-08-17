@@ -10,6 +10,7 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="library" name="scala-sdk-2.10.4" level="application" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-api:2.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.logging.log4j:log4j-core:2.1" level="project" />
     <orderEntry type="library" name="Maven: org.apache.spark:spark-core_2.10:1.2.0" level="project" />

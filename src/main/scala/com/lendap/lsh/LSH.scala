@@ -9,7 +9,7 @@ import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.SparkContext._
 
-class LSH(data : RDD[SparseVector], m : Int, numHashFunc : Int, numBands : Int, minClusterSize : Int) extends Serializable {
+class LSH(data : RDD[SparseVector], m : RDD [Int], numHashFunc : Int, numBands : Int, minClusterSize : Int) extends Serializable {
 
   /** run LSH using the constructor parameters */
   def run() : LSHModel = {

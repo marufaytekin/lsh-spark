@@ -5,8 +5,10 @@ import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
 
 import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
+import org.apache.spark.mllib.random.RandomRDDs
 import org.apache.spark.rdd.RDD
-
+import org.apache.spark.mllib.recommendation.Rating
+import org.apache.spark.mllib.recommendation.ALS
 
 /**
  * Created by maytekin on 05.08.2015.
@@ -15,31 +17,43 @@ object Main {
 
   def main(args: Array[String]) {
     val dataFile = "data/ml-1m.data"
-    val conf = new SparkConf().setAppName("LSH").setMaster("local")
+    val conf = new SparkConf()
+      .setAppName("LSH")
+      .setMaster("local[4]")
     val sc = new SparkContext(conf)
     //read data file in as a RDD, partition RDD across <partitions> cores
     val data = sc.textFile(dataFile)
-    val usersRDD = data.map(line => line.split("\t")).map(elems => elems(0).toLong).distinct();
-    val itemsRDD = data.map(line => line.split("\t")).map(elems => elems(1).toLong).distinct();
-    val userItemMatrixRDD = data
+    val ratingsRDD = data
       .map(line => line.split("\t"))
-      .map(elems => (elems(0).toLong, (elems(1).toInt, elems(2).toDouble)))
-    val userRatingsRDD = userItemMatrixRDD.groupByKey()
-    val userRatingsFormedRDD = userRatingsRDD
-      .map(users => (users._1, Vectors.sparse(users._2.toList.size, users._2.toSeq).asInstanceOf[SparseVector]))
-    println(itemsRDD.takeOrdered(10).toList)
-    println(userRatingsFormedRDD.take(1))
-    //val users_gt50 = userRatingsRDD.map(a=>(a._1, a._2.size)).filter(_._2 > 50)
-    //println(userRatingsRDD.take(1).map(a=>(a._1, a._2.size)).toList)
+      .map(elems => (Rating(elems(0).toInt, elems(1).toInt, elems(2).toDouble)))
+    val users = ratingsRDD.map(ratings => ratings.user).distinct()
+    val items = ratingsRDD.map(ratings => ratings.product).distinct()
+    val ratings50 = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey().filter(a=>a._2.size > 50)
+    val mostRatedMovies = ratingsRDD.map(a => a.product).countByValue.toSeq
+    println(mostRatedMovies.sortBy(-_._2).take(50).toList)
+    //val rating  = ratingsRDD.filter(a => a.user == 4904 && a.product == 2054)
+    println(users.count() + " users rated on " +
+      items.count() + " movies and "  +
+      ratings50.count() + " users have more than 50 ratings.")
+    val numHashFunc = 8
+    val sampleUser = ratings50.take(1)
 
+    val (indices, values) = sampleUser(0)._2.toSeq.sortBy(_._1).unzip
+    println(indices.size)
+    println(values.size)
+
+    val sampleUserVec = sampleUser.map(a=>(a._1, Vectors.sparse(a._2.size, indices.toArray, values.toArray)))
     //val m = 100 /** number of elements */
-    //val h = Hasher.create(itemsRDD.count().toInt)
+    val maxElem = items.max()
+    val size = items.count()
+    val randRDD = RandomRDDs.normalRDD(sc, maxElem, 8)
+    val h = Hasher.create(randRDD)
+
     //val i = Array(0, 2, 3, 6)
     //val v = Array(1.0, -4.0, 6.0, -20.0)
-    //print(h.hash(new SparseVector(4, i, v)))
-    val numHashFunc = 8
-    //val m = new LSH(data =
-
+    val (user, vec) = sampleUserVec(0)
+    print(h.hash(vec.asInstanceOf[SparseVector]))
+    println("")
   }
 
 }
