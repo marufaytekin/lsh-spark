@@ -10,19 +10,19 @@ import scala.collection.mutable.ListBuffer
 import org.apache.spark.SparkContext._
 
 /** m: max number of elements in a vector */
-class LSHModel(m: Int, numHashFunc : Int) extends Serializable {
+class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable {
 
   /** generate numHashFunc hash functions */
   private val _hashFunctions = ListBuffer[Hasher]()
-  for (i <- 0 until numHashFunc)
+  for (i <- 0 until numHashFunc * numBands)
     _hashFunctions += Hasher.create(m)
   final val hashFunctions : List[(Hasher, Int)] = _hashFunctions.toList.zipWithIndex
 
   /** the signature matrix with (hashFunctions.size signatures) */
   var signatureMatrix : RDD[List[Int]] = null
 
-  /** the "bands" ((hash of List, band#), row#) */
-  var bands : RDD[((Int, Int), Iterable[Long])] = null
+  /** the "bands" bandID, (hash key, vector_id) */
+  var bands : RDD[(Int,(String, Iterable[Long]))] = null
 
   /** (vector id, cluster id) */
   var vector_cluster : RDD[(Long, Long)] = null

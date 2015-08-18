@@ -24,16 +24,20 @@ object Main {
     //read data file in as a RDD, partition RDD across <partitions> cores
     val data = sc.textFile(dataFile)
     val ratingsRDD = data
-      .map(line => line.split("\t"))
+      .map(line => line.split("::"))
       .map(elems => (Rating(elems(0).toInt, elems(1).toInt, elems(2).toDouble)))
 
     val users = ratingsRDD.map(ratings => ratings.user).distinct()
     val items = ratingsRDD.map(ratings => ratings.product).distinct()
+    val maxElem = items.max + 1
+    println(maxElem)
+    //println(items.filter(a=> (a > maxElem)).collect().toList)
     val ratings50 = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey().filter(a=>a._2.size > 50)
     val mostRatedMovies = ratingsRDD.map(a => a.product).countByValue.toSeq
-    val spData = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey()
-    .map(a=>(a._1, Vectors.sparse(a._2.size, a._2.toSeq)))
-    println(mostRatedMovies.sortBy(- _._2).take(50).toList)
+    val userRatings = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey()
+    val sampleRating = userRatings.take(1)(0)._2.toSeq
+    val spData = userRatings.map(a=>(a._1.toLong, Vectors.sparse(maxElem, a._2.toSeq).asInstanceOf[SparseVector]))
+
     //val rating  = ratingsRDD.filter(a => a.user == 4904 && a.product == 2054)
     println(users.count() + " users rated on " +
       items.count() + " movies and "  +
@@ -46,17 +50,17 @@ object Main {
 
     //val sampleUserVec = sampleUser.map(a=>(a._1, Vectors.sparse(a._2.size, indices.toArray, values.toArray)))
     //val m = 100 /** number of elements */
-    val maxElem = items.max()
+
     val size = items.count()
     //run locality sensitive hashing
-    val lsh = new  LSH(ratingsRDD, numHashFunc = 6, numBands = 5)
+    val lsh = new  LSH(spData, maxElem, 6, 6)
     val model = lsh.run
 
     val h = Hasher.create(maxElem)
 
     //val (user, vec) = sampleUserVec(0)
     //print(h.hash(vec.asInstanceOf[SparseVector]))
-    println("")
+    model.bands.collect() foreach println
   }
 
 }
