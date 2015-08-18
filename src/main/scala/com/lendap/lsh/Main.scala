@@ -16,6 +16,7 @@ import org.apache.spark.mllib.recommendation.ALS
 object Main {
 
   def main(args: Array[String]) {
+    val numPartitions = 8
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
       .setAppName("LSH")
