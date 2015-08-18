@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 import org.apache.spark.SparkContext._
 
 /** m: max number of elements in a vector */
-class LSHModel(m : RDD [Int], numHashFunc : Int) extends Serializable {
+class LSHModel(m: Int, numHashFunc : Int) extends Serializable {
 
   /** generate numHashFunc hash functions */
   private val _hashFunctions = ListBuffer[Hasher]()

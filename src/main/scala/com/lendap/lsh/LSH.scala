@@ -9,13 +9,13 @@ import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.SparkContext._
 
-class LSH(data : RDD[SparseVector], m : RDD [Int], numHashFunc : Int, numBands : Int, minClusterSize : Int) extends Serializable {
+class LSH(data : RDD[SparseVector], size: Int, numHashFunc : Int, numBands : Int) extends Serializable {
 
   /** run LSH using the constructor parameters */
   def run() : LSHModel = {
 
     //create a new model object
-    val model = new LSHModel(m, numHashFunc)
+    val model = new LSHModel(size, numHashFunc)
 
     //preserve vector index
     val zdata = data.zipWithIndex().cache()
@@ -33,7 +33,7 @@ class LSH(data : RDD[SparseVector], m : RDD [Int], numHashFunc : Int, numBands :
 
     //we only want groups of size >= <minClusterSize>
     //(vector id, cluster id)
-    model.vector_cluster = model.bands.filter(x => x._2.size >= minClusterSize).map(x => x._2.toList.sorted).distinct().zipWithIndex().map(x => x._1.map(y => (y.asInstanceOf[Long], x._2))).flatMap(x => x.grouped(1)).map(x => x(0)).cache()
+    //model.vector_cluster = model.bands.filter(x => x._2.size >= minClusterSize).map(x => x._2.toList.sorted).distinct().zipWithIndex().map(x => x._1.map(y => (y.asInstanceOf[Long], x._2))).flatMap(x => x.grouped(1)).map(x => x(0)).cache()
 
     //(cluster id, vector id)
     model.cluster_vector = model.vector_cluster.map(x => x.swap).cache()
