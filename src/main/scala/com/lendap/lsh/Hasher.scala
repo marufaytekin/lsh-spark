@@ -1,10 +1,7 @@
 package com.lendap.lsh
 
 
-import org.apache.spark.SparkContext
-import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
-import org.apache.spark.mllib.random.RandomRDDs
-import org.apache.spark.rdd.RDD
+import org.apache.spark.mllib.linalg.SparseVector
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
@@ -18,27 +15,29 @@ import scala.util.Random
  *  else
  *    h_r(u) = 1
  */
-class Hasher(r: RDD[Double]) extends Serializable {
+class Hasher(r: Array[Double]) extends Serializable {
 
   /** hash SparseVector v with random vector r */
   def hash(u : SparseVector) : Int = {
-    //val rVec: Array[Double] = u.indices.map(i => r(i))
-    //val hashVal = (rVec zip u.values).map(_tuple => _tuple._1 * _tuple._2).sum
-    //if (hashVal > 0) 1 else 0
-    val (indices, values) = r.zipWithIndex()
-    val sv = Vectors.sparse(r.count.toInt, indices, values).asInstanceOf[SparseVector]
-    for i<- u.indices
+    val rVec: Array[Double] = u.indices.map(i => r(i))
+    val hashVal = (rVec zip u.values).map(_tuple => _tuple._1 * _tuple._2).sum
+    if (hashVal > 0) 1 else 0
+  }
 
 }
 
 object Hasher {
 
   /** create a new instance providing size of the random vector Array [Double] */
-  def create (size: Int, sc: SparkContext, numPartitions: Int) = new Hasher(r(size, sc, numPartitions))
+  def create (size: Int) = new Hasher(r(size))
 
   /** create a random vector whose whose components are -1 and +1 */
-  def r(size: Int, sc: SparkContext, numPartitions: Int) : RDD[Double] =
-    RandomRDDs.normalRDD(sc, size, numPartitions).map(x=> Math.pow(-1.0, (x*10).toInt))
-
+  def r(size: Int) : Array[Double] = {
+    val buf = new ArrayBuffer[Double]
+    val rnd = new Random()
+    for (i <- 0 until size)
+      buf += (if (rnd.nextGaussian() < 0) -1 else 1)
+    buf.toArray
+  }
 
 }
