@@ -11,8 +11,8 @@ import org.apache.spark.SparkContext._
 
 class LSH(data : RDD[(Long, SparseVector)], size: Int, numHashFunc : Int, numBands : Int) extends Serializable {
 
-  /** run LSH using the constructor parameters */
-  def run() : LSHModel = {
+  /** Build LSH model. */
+  def model() : LSHModel = {
 
     //create a new model object
     val model = new LSHModel(size, numHashFunc, numBands)
@@ -33,21 +33,11 @@ class LSH(data : RDD[(Long, SparseVector)], size: Int, numHashFunc : Int, numBan
     //group items that hash together in the same bucket (band#, (hash_key, vec_id list))
     model.bands = hashedDataRDD.map(x => (x._1._1, (x._1._2, x._2))).cache()
 
-    //we only want groups of size >= <minClusterSize>
-    //(vector id, cluster id)
-    //model.vector_cluster = model.bands.filter(x => x._2.size >= minClusterSize).map(x => x._2.toList.sorted).distinct().zipWithIndex().map(x => x._1.map(y => (y.asInstanceOf[Long], x._2))).flatMap(x => x.grouped(1)).map(x => x(0)).cache()
-
-    //(cluster id, vector id)
-    ///model.cluster_vector = model.vector_cluster.map(x => x.swap).cache()
-
-    //(cluster id, List(vector))
-    ///model.clusters = zdata.map(x => x.swap).join(model.vector_cluster).map(x => (x._2._2, x._2._1)).groupByKey().cache()
-
     model
   }
 
-  /** compute a single vector against an existing model and return the candidate band */
-  def getCandidateSets(data : SparseVector, model : LSHModel, itemID : Long) : RDD[Iterable[Long]] = {
+  /** hash a single vector against an existing model and return the candidate buckets */
+  def filter(data : SparseVector, model : LSHModel, itemID : Long) : RDD[Iterable[Long]] = {
     val hashKey = model.hashFunctions.map(h => h._1.hash(data)).mkString("")
     model.bands.filter(x => x._2._1 == hashKey).map(a => a._2._2)
   }
