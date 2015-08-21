@@ -9,10 +9,16 @@ import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.SparkContext._
 
-/** m: max number of elements in a vector */
+/** Create LSH model for maximum m number of elements in each vector.
+  *
+  * @param m max number of possible elements in a vector
+  * @param numHashFunc number of hash functions
+  * @param numBands number of bands. This parameter sometimes called buckets or hash tables as well.
+  *
+  * */
 class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable {
 
-  /** generate numHashFunc * numBands hash functions */
+  /** generate numHashFunc * numBands randomly generated hash functions and store them in hashFunctions */
   private val _hashFunctions = ListBuffer[Hasher]()
   for (i <- 0 until numHashFunc * numBands)
     _hashFunctions += Hasher.create(m)

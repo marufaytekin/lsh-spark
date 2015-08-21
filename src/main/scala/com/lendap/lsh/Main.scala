@@ -15,6 +15,7 @@ import org.apache.spark.mllib.recommendation.ALS
  */
 object Main {
 
+  /**Sample usage of LSH.*/
   def main(args: Array[String]) {
     val numPartitions = 8
     val dataFile = "data/ml-1m.data"
