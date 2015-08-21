@@ -38,6 +38,8 @@ object Main {
     val userRatings = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey()
     val sampleRating = userRatings.take(1)(0)._2.toSeq
     val spData = userRatings.map(a=>(a._1.toLong, Vectors.sparse(maxElem, a._2.toSeq).asInstanceOf[SparseVector]))
+    val sample = spData.take(1).toList
+    println(sample)
 
     println(users.count() + " users rated on " +
       items.count() + " movies and "  +
@@ -49,12 +51,11 @@ object Main {
     val lsh = new  LSH(spData, maxElem, 6, 6)
     val model = lsh.model
 
-    val h = Hasher.create(maxElem)
-
     //val (user, vec) = sampleUserVec(0)
     //print(h.hash(vec.asInstanceOf[SparseVector]))
-    //model.bands.collect() foreach println
-    model.filter("100010") foreach println
+    model.bands.collect() foreach println
+    //model.filter("100010") foreach println
+
   }
 
 }
