@@ -9,13 +9,21 @@ import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ListBuffer
 import org.apache.spark.SparkContext._
 
-class LSH(data : RDD[(Long, SparseVector)], size: Int, numHashFunc : Int, numBands : Int) extends Serializable {
+/** Build LSH model with data RDD. Hash each vector number of band times and stores in a bucket.
+  *
+  *
+  * @param data RDD of sparse vectors with vector Ids. RDD(vec_id, SparseVector)
+  * @param m max number of possible elements in a vector
+  * @param numHashFunc number of hash functions
+  * @param numBands number of bands. This parameter sometimes called buckets or hash tables as well.
+  *
+  * */
+class LSH(data : RDD[(Long, SparseVector)], m: Int, numHashFunc : Int, numBands : Int) extends Serializable {
 
-  /** Build LSH model. */
   def model() : LSHModel = {
 
     //create a new model object
-    val model = new LSHModel(size, numHashFunc, numBands)
+    val model = new LSHModel(m, numHashFunc, numBands)
 
     val dataRDD = data.cache()
 
