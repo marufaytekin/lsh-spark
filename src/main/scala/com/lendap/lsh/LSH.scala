@@ -42,17 +42,4 @@ class LSH(data : RDD[(Long, SparseVector)], size: Int, numHashFunc : Int, numBan
     model.bands.filter(x => x._2._1 == hashKey).map(a => a._2._2)
   }
 
-  /** compute jaccard between two vectors */
-  def jaccard(a : SparseVector, b : SparseVector) : Double = {
-    val al = a.indices.toList
-    val bl = b.indices.toList
-    al.intersect(bl).size / al.union(bl).size.doubleValue
-  }
-
-  /** compute jaccard similarity over a list of vectors */
-  def jaccard(l : List[SparseVector]) : Double = {
-    l.foldLeft(l(0).indices.toList)((a1, b1) => a1.intersect(b1.indices.toList.asInstanceOf[List[Nothing]])).size /
-      l.foldLeft(List())((a1, b1) => a1.union(b1.indices.toList.asInstanceOf[List[Nothing]])).distinct.size.doubleValue
-  }
-
 }
