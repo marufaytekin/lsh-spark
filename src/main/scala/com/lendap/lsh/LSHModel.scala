@@ -30,5 +30,11 @@ class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable {
   /** filter out buckets with hashKey.*/
   def filter(hashKey : String) : RDD[(String, Iterable[Long])] = bands.filter(x => x._2._1 == hashKey).map(x => x._2)
 
+  /** hash a single vector against an existing model and return the candidate buckets */
+  def filter(data : SparseVector, model : LSHModel, itemID : Long) : RDD[Iterable[Long]] = {
+    val hashKey = hashFunctions.map(h => h._1.hash(data)).mkString("")
+    bands.filter(x => x._2._1 == hashKey).map(a => a._2._2)
+  }
+
 }
 

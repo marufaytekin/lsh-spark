@@ -44,10 +44,4 @@ class LSH(data : RDD[(Long, SparseVector)], m: Int, numHashFunc : Int, numBands 
     model
   }
 
-  /** hash a single vector against an existing model and return the candidate buckets */
-  def filter(data : SparseVector, model : LSHModel, itemID : Long) : RDD[Iterable[Long]] = {
-    val hashKey = model.hashFunctions.map(h => h._1.hash(data)).mkString("")
-    model.bands.filter(x => x._2._1 == hashKey).map(a => a._2._2)
-  }
-
 }
