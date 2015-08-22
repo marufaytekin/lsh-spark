@@ -24,9 +24,9 @@ object Main {
       .setMaster("local[4]")
     val sc = new SparkContext(conf)
     //read data file in as a RDD, partition RDD across <partitions> cores
-    val data = sc.textFile(dataFile)
+    /*val data = sc.textFile(dataFile)
     val ratingsRDD = data
-      .map(line => line.split("::"))
+      .map(line => line.split("\\t"))
       .map(elems => Rating(elems(0).toInt, elems(1).toInt, elems(2).toDouble))
 
     val users = ratingsRDD.map(ratings => ratings.user).distinct()
@@ -54,7 +54,19 @@ object Main {
     //val (user, vec) = sampleUserVec(0)
     //print(h.hash(vec.asInstanceOf[SparseVector]))
     model.bands.collect() foreach println
-    //model.filter("100010") foreach println
+    //model.filter("100010") foreach println*/
+
+    val data = List(
+      List(5.0,3.0,4.0,5.0,5.0,1.0,5.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
+      List(1.0,2.0,1.0,5.0,1.0,5.0,1.0,4.0,1.0,3.0).zipWithIndex.map(a=>a.swap),
+      List(5.0,3.0,4.0,1.0,5.0,4.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
+      List(1.0,3.0,4.0,5.0,5.0,1.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap))
+
+    val rdd = sc.parallelize(data)
+    val vectorRDD = rdd.map(a => Vectors.sparse(a.size, a).asInstanceOf[SparseVector]).map(a=>(math.random.toLong, a))
+
+    val a = vectorRDD.collect()
+    val lsh = new  LSH(vectorRDD, 10, 2, 6)
 
   }
 
