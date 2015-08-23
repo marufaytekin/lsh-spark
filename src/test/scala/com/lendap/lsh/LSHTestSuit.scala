@@ -8,7 +8,7 @@ import org.scalatest.FunSuite
  */
 class LSHTestSuit extends FunSuite with LocalSparkContext {
 
-  test("hasher test") {
+  test("hasher") {
 
     val data = List(
       List(5.0,3.0,4.0,5.0,5.0,1.0,5.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
@@ -34,6 +34,32 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     assert(hashKey === "1010")
 
 
+
+  }
+
+  test ("lsh") {
+
+    val numBands = 5
+    val numHashFunc = 4
+    val m = 50 //number of elements in each vector
+    val n = 30 //number of data points (vectors)
+    val rnd = new scala.util.Random
+
+    //generate n random vectors whose elements range 1-5
+    val data = List.range(1, n).map(a => (a, List.fill(m)(1 + rnd.nextInt((5)).toDouble).zipWithIndex.map(x => x.swap)))
+    val rdd = sc.parallelize(data)
+    val vectorsRDD = rdd.map(a => (a._1.toLong, Vectors.sparse(a._2.size, a._2).asInstanceOf[SparseVector]))
+    val lsh = new  LSH(vectorsRDD, m, numHashFunc, numBands)
+    val model = lsh.model
+
+    //make sure numBands bands created
+    assert (model.bands.map(a => a._1).collect().distinct.size === numBands)
+
+    //make sure each key size matches with number of hash functions
+    assert (model.bands.filter(a => a._2._1.length != numHashFunc).count === 0)
+
+    //make sure there is no empty bucket
+    assert (model.bands.filter(a => a._2._2.size == 0).count === 0)
 
   }
 

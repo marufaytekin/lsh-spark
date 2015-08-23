@@ -8,7 +8,7 @@ import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
 import org.apache.spark.mllib.random.RandomRDDs
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.recommendation.Rating
-import org.apache.spark.mllib.recommendation.ALS
+
 
 /**
  * Created by maytekin on 05.08.2015.
@@ -17,6 +17,7 @@ object Main {
 
   /**Sample usage of LSH.*/
   def main(args: Array[String]) {
+    case class Rating[@specialized(Int, Long) ID](user: ID, item: ID, rating: Float)
     val numPartitions = 8
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
@@ -24,9 +25,9 @@ object Main {
       .setMaster("local[4]")
     val sc = new SparkContext(conf)
     //read data file in as a RDD, partition RDD across <partitions> cores
-    /*val data = sc.textFile(dataFile)
+    val data = sc.textFile(dataFile)
     val ratingsRDD = data
-      .map(line => line.split("\\t"))
+      .map(line => line.split("::"))
       .map(elems => Rating(elems(0).toInt, elems(1).toInt, elems(2).toDouble))
 
     val users = ratingsRDD.map(ratings => ratings.user).distinct()
@@ -48,25 +49,12 @@ object Main {
 
     val size = items.count()
     //run locality sensitive hashing
-    val lsh = new  LSH(spData, maxElem, 6, 6)
+    val lsh = new  LSH(spData, maxElem, numHashFunc = 6, numBands = 4)
     val model = lsh.model
 
-    //val (user, vec) = sampleUserVec(0)
-    //print(h.hash(vec.asInstanceOf[SparseVector]))
-    model.bands.collect() foreach println
+    model.filter(a => a._2._1 == "100100") foreach println
+
     //model.filter("100010") foreach println*/
-
-    val data = List(
-      List(5.0,3.0,4.0,5.0,5.0,1.0,5.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
-      List(1.0,2.0,1.0,5.0,1.0,5.0,1.0,4.0,1.0,3.0).zipWithIndex.map(a=>a.swap),
-      List(5.0,3.0,4.0,1.0,5.0,4.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
-      List(1.0,3.0,4.0,5.0,5.0,1.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap))
-
-    val rdd = sc.parallelize(data)
-    val vectorRDD = rdd.map(a => Vectors.sparse(a.size, a).asInstanceOf[SparseVector]).map(a=>(math.random.toLong, a))
-
-    val a = vectorRDD.collect()
-    val lsh = new  LSH(vectorRDD, 10, 2, 6)
 
   }
 

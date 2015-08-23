@@ -8,7 +8,7 @@ import org.apache.spark.rdd.RDD
  * Created by maruf on 20/08/15.
  */
 
-object IBPrediction extends Serializable with Prediction with Logging {
+object ItemBased extends Serializable with Prediction with Logging {
 
   /** Given a target user id and nearest neighbors of a target item, item-based rating prediction
     * algorithm is used to predict rating of the itemId for the target user.

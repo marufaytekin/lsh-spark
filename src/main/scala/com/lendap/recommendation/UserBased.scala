@@ -7,7 +7,7 @@ import org.apache.spark.rdd.RDD
 /**
  * Created by maruf on 20/08/15.
  */
-object UBPrediction extends Serializable with Prediction with Logging {
+object UserBased extends Serializable with Prediction with Logging {
 
   /** Given a target item id and nearest neighbors list user-based rating prediction algorithm
     * is used to predict rating of itemId for a target user.

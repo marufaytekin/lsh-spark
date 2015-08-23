@@ -25,4 +25,5 @@ trait LocalSparkContext extends BeforeAndAfterAll { self: Suite =>
     }
     super.afterAll()
   }
+
 }
