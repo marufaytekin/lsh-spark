@@ -17,7 +17,7 @@ object Main {
 
   /**Sample usage of LSH.*/
   def main(args: Array[String]) {
-    case class Rating[@specialized(Int, Long) ID](user: ID, item: ID, rating: Float)
+    //case class Rating[@specialized(Int, Long) ID](user: ID, item: ID, rating: Float)
     val numPartitions = 8
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
