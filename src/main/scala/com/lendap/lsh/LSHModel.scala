@@ -7,13 +7,12 @@ package com.lendap.lsh
 import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ListBuffer
-import org.apache.spark.SparkContext._
 
 /** Create LSH model for maximum m number of elements in each vector.
   *
   * @param m max number of possible elements in a vector
   * @param numHashFunc number of hash functions
-  * @param numBands number of bands. This parameter sometimes called buckets or hash tables as well.
+  * @param numBands number of bands. This parameter sometimes called hash tables as well.
   *
   * */
 class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable {
@@ -27,8 +26,9 @@ class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable {
   /** the "bands" bandID, (hash key, vector_id list) */
   var bands : RDD[(Int,(String, Iterable[Long]))] = null
 
-  /** filter out buckets with hashKey.*/
-  def filter(hashKey : String) : RDD[(String, Iterable[Long])] = bands.filter(x => x._2._1 == hashKey).map(x => x._2)
+  /** generic filter function for bands.*/
+  def filter(f:((Int,(String, Iterable[Long]))) => Boolean) : RDD[(Int,(String, Iterable[Long]))] =
+    bands.map(a => a).filter(f)
 
   /** hash a single vector against an existing model and return the candidate buckets */
   def filter(data : SparseVector, model : LSHModel, itemID : Long) : RDD[Iterable[Long]] = {
