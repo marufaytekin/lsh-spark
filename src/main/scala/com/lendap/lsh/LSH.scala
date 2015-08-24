@@ -4,6 +4,7 @@ package com.lendap.lsh
  * Created by maruf on 09/08/15.
  */
 
+import org.apache.spark.SparkContext
 import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
 
@@ -16,9 +17,9 @@ import org.apache.spark.rdd.RDD
   * @param numBands number of bands. This parameter sometimes called buckets or hash tables as well.
   *
   * */
-class LSH(data : RDD[(Long, SparseVector)], m: Int, numHashFunc : Int = 4, numBands : Int = 4) extends Serializable {
+class LSH(data : RDD[(Long, SparseVector)] = null, m: Int = 0, numHashFunc : Int = 4, numBands : Int = 4) extends Serializable {
 
-  def model() : LSHModel = {
+  def run() : LSHModel = {
 
     //create a new model object
     val model = new LSHModel(m, numHashFunc, numBands)
@@ -29,18 +30,26 @@ class LSH(data : RDD[(Long, SparseVector)], m: Int, numHashFunc : Int = 4, numBa
     // - hash each vector numHashFunc times
     // - concat each hash value to create a hash key
     // - position band id hash keys and associated vector ids into a new RDD.
+    // - Creates RDD of ((band#, hash_key), vec_id) tuples.
     val hashedDataRDD = dataRDD
       .map(v => (model.hashFunctions.map(h => (h._1.hash(v._2), h._2 % numBands)), v._1))
       .map(x => x._1.map(a => ((a._2, x._2), a._1)))
       .flatMap(a => a).groupByKey()
       .map(x => ((x._1._1, x._2.mkString("")), x._1._2))
-      .groupByKey().cache()
 
     //group items that hash together in the same bucket (band#, (hash_key, vec_id list))
-    model.bands = hashedDataRDD.map(x => (x._1._1, (x._1._2, x._2))).cache()
+    model.bands = hashedDataRDD.cache()
 
     model
 
   }
+
+  def compare [T] (v1: T, v2: T): Double = ???
+
+  //def load [T] (sc: SparkContext, path: String): LSHModel = {
+  //  val model = new LSHModel(m, numHashFunc, numBands)
+  //  None
+  //}
+
 
 }
