@@ -15,7 +15,7 @@ import org.apache.spark.mllib.recommendation.Rating
  */
 object Main {
 
-  /**Sample usage of LSH.*/
+  /** Sample usage of LSH movie rating data.*/
   def main(args: Array[String]) {
     //case class Rating[@specialized(Int, Long) ID](user: ID, item: ID, rating: Float)
     val numPartitions = 8
