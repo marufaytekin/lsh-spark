@@ -50,25 +50,31 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     val rdd = sc.parallelize(data)
     val vectorsRDD = rdd.map(a => (a._1.toLong, Vectors.sparse(a._2.size, a._2).asInstanceOf[SparseVector]))
     val lsh = new  LSH(vectorsRDD, m, numHashFunc, numBands)
-    val model = lsh.model
+    val model = lsh.run
 
     //make sure numBands bands created
-    assert (model.bands.map(a => a._1).collect().distinct.size === numBands)
+    assert (model.bands.map(a => a._1._1).collect().distinct.size === numBands)
 
     //make sure each key size matches with number of hash functions
-    assert (model.bands.filter(a => a._2._1.length != numHashFunc).count === 0)
+    assert (model.bands.filter(a => a._1._2.length != numHashFunc).count === 0)
 
     //make sure there is no empty bucket
-    assert (model.bands.filter(a => a._2._2.size == 0).count === 0)
+    assert (model.bands
+      .map(a => (a._1._2, a._2))
+      .groupByKey().filter(x => x._2.size == 0)
+      .count === 0)
 
     // make sure vectors are not clustered in one bucket
-    assert (model.bands.filter(a => a._2._2.size == n).count === 0)
+    assert (model.bands
+      .map(a => (a._1._1, a._1._2))
+      .groupByKey().filter(x => x._2.size == n)
+      .count === 0)
 
     // make sure number of buckets for each bands is in expected range (2 - 2^numHashFunc)
     assert (model.bands
-      .map(a => (a._1, 1))
+      .map(a => (a._1._1, 1))
       .reduceByKey(_ + _)
-      .filter(a => a._2 < 2 || a._2 > math.pow(2, numHashFunc))
+      .filter(x => x._2 < 2 || x._2 > math.pow(2, numHashFunc))
       .count === 0)
 
   }

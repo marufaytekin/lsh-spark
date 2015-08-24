@@ -50,9 +50,9 @@ object Main {
     val size = items.count()
     //run locality sensitive hashing
     val lsh = new  LSH(spData, maxElem, numHashFunc = 6, numBands = 4)
-    val model = lsh.model
+    val model = lsh.run
 
-    model.filter(a => a._2._1 == "100100") foreach println
+    model.filter(a => a._1._2 == "100100") foreach println
 
     //model.filter("100010") foreach println*/
 
