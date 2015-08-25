@@ -8,14 +8,16 @@ import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
 import org.apache.spark.mllib.random.RandomRDDs
 import org.apache.spark.rdd.RDD
 import org.apache.spark.mllib.recommendation.Rating
-import org.apache.spark.mllib.recommendation.ALS
+
 
 /**
  * Created by maytekin on 05.08.2015.
  */
 object Main {
 
+  /** Sample usage of LSH movie rating data.*/
   def main(args: Array[String]) {
+    //case class Rating[@specialized(Int, Long) ID](user: ID, item: ID, rating: Float)
     val numPartitions = 8
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
@@ -37,6 +39,8 @@ object Main {
     val userRatings = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey()
     val sampleRating = userRatings.take(1)(0)._2.toSeq
     val spData = userRatings.map(a=>(a._1.toLong, Vectors.sparse(maxElem, a._2.toSeq).asInstanceOf[SparseVector]))
+    val sample = spData.take(1).toList
+    println(sample)
 
     println(users.count() + " users rated on " +
       items.count() + " movies and "  +
@@ -45,15 +49,16 @@ object Main {
 
     val size = items.count()
     //run locality sensitive hashing
-    val lsh = new  LSH(spData, maxElem, 6, 6)
-    val model = lsh.model
+    val lsh = new  LSH(spData, maxElem, numHashFunc = 6, numBands = 4)
+    val model = lsh.run
 
-    val h = Hasher.create(maxElem)
+    model.filter(a => a._1._2 == "100100") foreach println
 
-    //val (user, vec) = sampleUserVec(0)
-    //print(h.hash(vec.asInstanceOf[SparseVector]))
-    //model.bands.collect() foreach println
-    model.filter("100010") foreach println
+
+    model.save(sc,"target/output")
+
+    //model.filter("100010") foreach println*/
+
   }
 
 }

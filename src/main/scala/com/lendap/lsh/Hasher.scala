@@ -15,7 +15,7 @@ import scala.util.Random
  *  else
  *    h_r(u) = 1
  */
-class Hasher(r: Array[Double]) extends Serializable {
+class Hasher(val r: Array[Double]) extends Serializable {
 
   /** hash SparseVector v with random vector r */
   def hash(u : SparseVector) : Int = {
@@ -29,12 +29,12 @@ class Hasher(r: Array[Double]) extends Serializable {
 object Hasher {
 
   /** create a new instance providing size of the random vector Array [Double] */
-  def create (size: Int) = new Hasher(r(size))
+  def apply (size: Int, seed: Long = System.nanoTime) = new Hasher(r(size, seed))
 
   /** create a random vector whose whose components are -1 and +1 */
-  def r(size: Int) : Array[Double] = {
+  def r(size: Int, seed: Long) : Array[Double] = {
     val buf = new ArrayBuffer[Double]
-    val rnd = new Random()
+    val rnd = new Random(seed)
     for (i <- 0 until size)
       buf += (if (rnd.nextGaussian() < 0) -1 else 1)
     buf.toArray
