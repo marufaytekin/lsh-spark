@@ -72,9 +72,10 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
 
     // make sure number of buckets for each bands is in expected range (2 - 2^numHashFunc)
     assert (model.bands
-      .map(a => (a._1._1, 1))
-      .reduceByKey(_ + _)
-      .filter(x => x._2 < 2 || x._2 > math.pow(2, numHashFunc))
+      .map(a => (a._1._1, a._1._2))
+      .groupByKey()
+      .map(a => (a._1, a._2.toList.distinct))
+      .filter(a => a._2.size < 2 || a._2.size > math.pow(2, numHashFunc))
       .count === 0)
 
   }

@@ -29,22 +29,22 @@ class LSH(data : RDD[(Long, SparseVector)] = null, m: Int = 0, numHashFunc : Int
     //compute hash keys for each vector
     // - hash each vector numHashFunc times
     // - concat each hash value to create a hash key
-    // - position band id hash keys and associated vector ids into a new RDD.
-    // - Creates RDD of ((band#, hash_key), vec_id) tuples.
-    val hashedDataRDD = dataRDD
+    // - position band id hash keys and vector id into a new RDD.
+    // - creates RDD of ((band#, hash_key), vec_id) tuples.
+    model.bands = dataRDD
       .map(v => (model.hashFunctions.map(h => (h._1.hash(v._2), h._2 % numBands)), v._1))
       .map(x => x._1.map(a => ((a._2, x._2), a._1)))
       .flatMap(a => a).groupByKey()
-      .map(x => ((x._1._1, x._2.mkString("")), x._1._2))
-
-    //group items that hash together in the same bucket (band#, (hash_key, vec_id list))
-    model.bands = hashedDataRDD.cache()
+      .map(x => ((x._1._1, x._2.mkString("")), x._1._2)).cache()
 
     model
 
   }
 
   def compare [T] (v1: T, v2: T): Double = ???
+
+
+  def remove [T] (v : SparseVector) = ???
 
   //def load [T] (sc: SparkContext, path: String): LSHModel = {
   //  val model = new LSHModel(m, numHashFunc, numBands)
