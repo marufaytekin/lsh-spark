@@ -4,12 +4,17 @@ package com.lendap.lsh
  * Created by maytekin on 06.08.2015.
  */
 
+import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkContext
 import org.apache.spark.mllib.linalg.SparseVector
-import org.apache.spark.mllib.util.Saveable
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SQLContext
 import scala.collection.mutable.ListBuffer
-import scala.reflect.io.Path
+import org.apache.spark.mllib.util.{Saveable}
+
+import org.json4s._
+import org.json4s.JsonDSL._
+import org.json4s.jackson.JsonMethods._
 
 /** Create LSH model for maximum m number of elements in each vector.
   *
@@ -22,9 +27,11 @@ class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable wi
 
   /** generate numHashFunc * numBands randomly generated hash functions and store them in hashFunctions */
   private val _hashFunctions = ListBuffer[Hasher]()
+  private val _numBands = numBands
+  private val _numHashFunc = numHashFunc
   for (i <- 0 until numHashFunc * numBands)
     _hashFunctions += Hasher.create(m)
-  final val hashFunctions : List[(Hasher, Int)] = _hashFunctions.toList.zipWithIndex
+  final var hashFunctions: List[(Hasher, Int)] = _hashFunctions.toList.zipWithIndex
 
   /** the "bands" ((bandID, hash key), vector_id) */
   var bands : RDD[((Int, String), Long)] = null
@@ -39,18 +46,96 @@ class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable wi
     bands.filter(x => x._1._2 == hashKey).map(a => a._2)
   }
 
-  def hashValue (data: SparseVector, vId: Long, numBands: Int) = {
-    val a = hashFunctions.map(h => (h._1.hash(data), h._2 % numBands)).groupBy((k,v) => v)
+  /** creates hashValue for each band.*/
+  def hashValue (data: SparseVector, vId: Long, numBands: Int): List[(Int, String)] =
+    hashFunctions
+      .map(a => (a._2, a._1.hash(data)))
+      .groupBy(_._1)
+      .map(x => (x._1, x._2.mkString("")))
+      .toList
 
+  /** adds a new sparse vector with vector Id: vId to the model. */
+  def add (vId: Long, v: SparseVector, sc: SparkContext): LSHModel = {
+    val newRDD = sc.parallelize(hashValue(v, vId, _numBands).map(a => (a, vId)))
+    bands.++(newRDD)
+    this
   }
 
-  def add [T] (vId: Long, v: SparseVector): LSHModel = ???
+  /** remove sparse vector with vector Id: vId from the model. */
+  def remove (vId: Long, sc: SparkContext): LSHModel = {
+    bands =  bands.filter(x => x._2 != vId)
+    this
+  }
 
-  override def save(sc: SparkContext, path: String): Unit = ???
+  override def save(sc: SparkContext, path: String): Unit =
+    LSHModel.SaveLoadV0_0_1.save(sc, this, path)
 
   override protected def formatVersion: String = "0.0.1"
 
-  def load(sc : SparkContext, path : String) : LSHModel = ???
+}
+
+object LSHModel {
+
+  def load(sc: SparkContext, path: String): LSHModel = {
+    LSHModel.SaveLoadV0_0_1.load(sc, path)
+  }
+
+  private [lsh] object SaveLoadV0_0_1 {
+
+    private val thisFormatVersion = "0.0.1"
+
+    private val thisClassName = this.getClass.getName()
+
+    def save(sc: SparkContext, model: LSHModel, path: String): Unit = {
+      val metadata = compact(render(
+        ("class" -> thisClassName) ~ ("version" -> thisFormatVersion)))
+      sc.parallelize(Seq(metadata), 1).saveAsTextFile(Loader.metadataPath(path))
+      sc.parallelize(model.hashFunctions).saveAsObjectFile(Loader.hasherPath(path))
+      model.bands.saveAsTextFile(Loader.dataPath(path))
+    }
+
+    def load(sc: SparkContext, path: String): LSHModel = {
+      implicit val formats = DefaultFormats
+      val (className, formatVersion, metadata) = Loader.loadMetadata(sc, path)
+      assert(className == thisClassName)
+      assert(formatVersion == thisFormatVersion)
+      val bands = sc.textFile(Loader.dataPath(path)).map(a => a)
+
+      val hashers = sc.objectFile(Loader.hasherPath(path)).asInstanceOf[List[(Hasher, Int)]]
+
+      //TODO: validate bands and hashers
+
+      val model = new LSHModel(0,0,0)
+      model.hashFunctions = hashers
+      model
+    }
+  }
 
 }
 
+
+/** Helper functions for save load data.
+  * Taken from mllib. TODO: Remove and use Loader functions from mllib. */
+private[lsh] object Loader {
+
+  /** Returns URI for path/data using the Hadoop filesystem */
+  def dataPath(path: String): String = new Path(path, "data").toUri.toString
+
+  /** Returns URI for path/metadata using the Hadoop filesystem */
+  def metadataPath(path: String): String = new Path(path, "metadata").toUri.toString
+
+  /** Returns URI for path/metadata using the Hadoop filesystem */
+  def hasherPath(path: String): String = new Path(path, "hasher").toUri.toString
+
+  /**
+   * Load metadata from the given path.
+   * @return (class name, version, metadata)
+   */
+  def loadMetadata(sc: SparkContext, path: String): (String, String, JValue) = {
+    implicit val formats = DefaultFormats
+    val metadata = parse(sc.textFile(metadataPath(path)).first())
+    val clazz = (metadata \ "class").extract[String]
+    val version = (metadata \ "version").extract[String]
+    (clazz, version, metadata)
+  }
+}
