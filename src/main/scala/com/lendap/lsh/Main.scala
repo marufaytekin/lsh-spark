@@ -22,7 +22,7 @@ object Main {
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
       .setAppName("LSH")
-      .setMaster("local")
+      .setMaster("local[4]")
     val sc = new SparkContext(conf)
     //read data file in as a RDD, partition RDD across <partitions> cores
     val data = sc.textFile(dataFile)
@@ -53,6 +53,9 @@ object Main {
     val model = lsh.run
 
     model.filter(a => a._1._2 == "100100") foreach println
+
+
+    model.save(sc,"target/output")
 
     //model.filter("100010") foreach println*/
 

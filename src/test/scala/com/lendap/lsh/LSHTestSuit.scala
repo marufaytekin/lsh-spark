@@ -16,7 +16,7 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
       List(5.0,3.0,4.0,1.0,5.0,4.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
       List(1.0,3.0,4.0,5.0,5.0,1.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap))
 
-    val h = Hasher.create(10, 12345678)
+    val h = Hasher(10, 12345678)
     val rdd = sc.parallelize(data)
 
     //make sure we have 4
