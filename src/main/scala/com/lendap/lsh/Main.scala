@@ -22,7 +22,7 @@ object Main {
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
       .setAppName("LSH")
-      .setMaster("local[4]")
+      .setMaster("local")
     val sc = new SparkContext(conf)
     //read data file in as a RDD, partition RDD across <partitions> cores
     val data = sc.textFile(dataFile)

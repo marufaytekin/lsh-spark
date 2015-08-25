@@ -39,19 +39,18 @@ class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable wi
     bands.filter(x => x._1._2 == hashKey).map(a => a._2)
   }
 
-  def add [T] (v : SparseVector) = ???
-
-  def remove [T] (v : SparseVector) = ???
-
-  def save [T] (model: LSHModel, path: String) = {
-    bands.saveAsObjectFile(path + "bands")
-    hashFunctions
-
+  def hashValue (data: SparseVector, vId: Long, numBands: Int) = {
+    val a = hashFunctions.map(h => (h._1.hash(data), h._2 % numBands)).groupBy((k,v) => v)
 
   }
 
+  def add [T] (vId: Long, v: SparseVector): LSHModel = ???
+
   override def save(sc: SparkContext, path: String): Unit = ???
 
-  override protected def formatVersion: String = ???
+  override protected def formatVersion: String = "0.0.1"
+
+  def load(sc : SparkContext, path : String) : LSHModel = ???
+
 }
 
