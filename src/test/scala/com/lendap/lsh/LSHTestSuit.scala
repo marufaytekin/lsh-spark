@@ -10,14 +10,14 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
 
   test("hasher") {
 
-    val data = List(
+    val simpleDataRDD = List(
       List(5.0,3.0,4.0,5.0,5.0,1.0,5.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
       List(1.0,2.0,1.0,5.0,1.0,5.0,1.0,4.0,1.0,3.0).zipWithIndex.map(a=>a.swap),
       List(5.0,3.0,4.0,1.0,5.0,4.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
       List(1.0,3.0,4.0,5.0,5.0,1.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap))
 
     val h = Hasher(10, 12345678)
-    val rdd = sc.parallelize(data)
+    val rdd = sc.parallelize(simpleDataRDD)
 
     //make sure we have 4
     assert(rdd.count() === 4)
@@ -33,8 +33,6 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     //check if calculated hash key correct
     assert(hashKey === "1010")
 
-
-
   }
 
   test ("lsh") {
@@ -46,9 +44,10 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     val rnd = new scala.util.Random
 
     //generate n random vectors whose elements range 1-5
-    val data = List.range(1, n).map(a => (a, List.fill(m)(1 + rnd.nextInt((5)).toDouble).zipWithIndex.map(x => x.swap)))
-    val rdd = sc.parallelize(data)
-    val vectorsRDD = rdd.map(a => (a._1.toLong, Vectors.sparse(a._2.size, a._2).asInstanceOf[SparseVector]))
+    val dataRDD = List.range(1, n)
+      .map(a => (a, List.fill(m)(1 + rnd.nextInt((5)).toDouble).zipWithIndex.map(x => x.swap)))
+    val vectorsRDD = sc.parallelize(dataRDD).map(a => (a._1.toLong, Vectors.sparse(a._2.size, a._2).asInstanceOf[SparseVector]))
+
     val lsh = new  LSH(vectorsRDD, m, numHashFunc, numBands)
     val model = lsh.run
 
@@ -75,11 +74,22 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
       .map(a => (a._1._1, a._1._2))
       .groupByKey()
       .map(a => (a._1, a._2.toList.distinct))
-      .filter(a => a._2.size < 2 || a._2.size > math.pow(2, numHashFunc))
+      .filter(a => a._2.size < 1 || a._2.size > math.pow(2, numHashFunc))
       .count === 0)
 
+    // test save/load operations
+    val temp = "target/test/" + System.currentTimeMillis().toString
+    model.save(sc, temp)
+    val model2 = LSHModel.load(sc, temp)
+
+    // make sure size of saved and loaded models are the same
+    assert(model.bands.count === model2.bands.count)
+    assert(model.hashFunctions.size === model2.hashFunctions.size)
+
+    // make sure loaded model produce the same hashValue with the original
+    val testRDD = vectorsRDD.take(10)
+    testRDD.foreach(x => assert(model.hashValue(x._2, x._1) === model2.hashValue(x._2, x._1)))
+
   }
-
-
 
 }

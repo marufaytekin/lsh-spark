@@ -17,47 +17,49 @@ object Main {
 
   /** Sample usage of LSH movie rating data.*/
   def main(args: Array[String]) {
-    //case class Rating[@specialized(Int, Long) ID](user: ID, item: ID, rating: Float)
+
+    //init spark context
     val numPartitions = 8
     val dataFile = "data/ml-1m.data"
     val conf = new SparkConf()
       .setAppName("LSH")
       .setMaster("local[4]")
     val sc = new SparkContext(conf)
+
     //read data file in as a RDD, partition RDD across <partitions> cores
-    val data = sc.textFile(dataFile)
+    val data = sc.textFile(dataFile, numPartitions)
+    //parse data and create (user, item, rating) tuples
     val ratingsRDD = data
       .map(line => line.split("::"))
-      .map(elems => Rating(elems(0).toInt, elems(1).toInt, elems(2).toDouble))
+      .map(elems => (elems(0).toInt, elems(1).toInt, elems(2).toDouble))
+    //list of distinct items
+    val items = ratingsRDD.map(x => x._2).distinct()
+    val maxIndex = items.max + 1
+    //user item ratings
+    val userItemRatings = ratingsRDD.map(x => (x._1, (x._2, x._3))).groupByKey().cache()
+    //convert each user ratings to sparse vector (user_id, Vector_of_ratings)
+    val sparseVectorData = userItemRatings
+      .map(a=>(a._1.toLong, Vectors.sparse(maxIndex, a._2.toSeq).asInstanceOf[SparseVector]))
 
-    val users = ratingsRDD.map(ratings => ratings.user).distinct()
-    val items = ratingsRDD.map(ratings => ratings.product).distinct()
-    val maxElem = items.max + 1
-    println(maxElem)
-    val ratings50 = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey().filter(a=>a._2.size > 50)
-    val mostRatedMovies = ratingsRDD.map(a => a.product).countByValue.toSeq
-    val userRatings = ratingsRDD.map(a => (a.user, (a.product, a.rating))).groupByKey()
-    val sampleRating = userRatings.take(1)(0)._2.toSeq
-    val spData = userRatings.map(a=>(a._1.toLong, Vectors.sparse(maxElem, a._2.toSeq).asInstanceOf[SparseVector]))
-    val sample = spData.take(1).toList
-    println(sample)
-
-    println(users.count() + " users rated on " +
-      items.count() + " movies and "  +
-      ratings50.count() + " users have more than 50 ratings.")
-    val numHashFunc = 8
-
-    val size = items.count()
-    //run locality sensitive hashing
-    val lsh = new  LSH(spData, maxElem, numHashFunc = 6, numBands = 4)
+    //run locality sensitive hashing model with 6 bands and 8 hash functions
+    val lsh = new  LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
     val model = lsh.run
 
-    model.filter(a => a._1._2 == "100100") foreach println
+    //print sample hashed vectors in ((bandId#, hashValue), vectorId) format
+    model.bands.take(10) foreach println
 
+    //get the near neighbors of userId: 4587 in the model
+    val candList = model.getCandidateList(4587)
+    println(candList.count() + " : " + candList.collect().toList)
 
-    model.save(sc,"target/output")
+    //save model
+    val temp = "target/" + System.currentTimeMillis().toString
+    model.save(sc, temp)
 
-    //model.filter("100010") foreach println*/
+    //load model
+    val modelLoaded = LSHModel.load(sc, temp)
+
+    modelLoaded.bands.take(10) foreach println
 
   }
 
