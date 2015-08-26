@@ -16,6 +16,8 @@ import org.json4s._
 import org.json4s.JsonDSL._
 import org.json4s.jackson.JsonMethods._
 
+import scala.util.Try
+
 /** Create LSH model for maximum m number of elements in each vector.
   *
   * @param m max number of possible elements in a vector
@@ -30,7 +32,7 @@ class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable wi
   private val _numBands = numBands
   private val _numHashFunc = numHashFunc
   for (i <- 0 until numHashFunc * numBands)
-    _hashFunctions += Hasher.create(m)
+    _hashFunctions += Hasher(m)
   final var hashFunctions: List[(Hasher, Int)] = _hashFunctions.toList.zipWithIndex
 
   /** the "bands" ((bandID, hash key), vector_id) */
@@ -57,7 +59,7 @@ class LSHModel(m: Int, numHashFunc : Int, numBands: Int) extends Serializable wi
   /** adds a new sparse vector with vector Id: vId to the model. */
   def add (vId: Long, v: SparseVector, sc: SparkContext): LSHModel = {
     val newRDD = sc.parallelize(hashValue(v, vId, _numBands).map(a => (a, vId)))
-    bands.++(newRDD)
+    bands ++ newRDD
     this
   }
 
@@ -90,8 +92,9 @@ object LSHModel {
       val metadata = compact(render(
         ("class" -> thisClassName) ~ ("version" -> thisFormatVersion)))
       sc.parallelize(Seq(metadata), 1).saveAsTextFile(Loader.metadataPath(path))
-      sc.parallelize(model.hashFunctions).saveAsObjectFile(Loader.hasherPath(path))
-      model.bands.saveAsTextFile(Loader.dataPath(path))
+      sc.parallelize(model.hashFunctions.map(x => (x._2, x._1.r.mkString(","))))
+        .saveAsTextFile(Loader.hasherPath(path))
+      model.bands.map(x => (x._1._1, x._1._2, x._2)).saveAsTextFile(Loader.dataPath(path))
     }
 
     def load(sc: SparkContext, path: String): LSHModel = {
@@ -99,14 +102,21 @@ object LSHModel {
       val (className, formatVersion, metadata) = Loader.loadMetadata(sc, path)
       assert(className == thisClassName)
       assert(formatVersion == thisFormatVersion)
-      val bands = sc.textFile(Loader.dataPath(path)).map(a => a)
+      val bands = sc.textFile(Loader.dataPath(path))
+        .map(x => x.split(","))
+        .map(x => ((x(0).toInt, x(1)), x(2).toLong))
 
-      val hashers = sc.objectFile(Loader.hasherPath(path)).asInstanceOf[List[(Hasher, Int)]]
+      val hashers = sc.textFile(Loader.hasherPath(path))
+        .map(a => a.split(","))
+        .map(x => (x.head, x.tail))
+        .map(x => (new Hasher(x._2.map(_.toDouble)), x._1.toInt)).collect().toList
 
       //TODO: validate bands and hashers
-
+      val str = "as(dg,fa,sd,(2,3),g".
       val model = new LSHModel(0,0,0)
       model.hashFunctions = hashers
+      model.bands = bands
+
       model
     }
   }
