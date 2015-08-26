@@ -63,13 +63,13 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
       .groupByKey().filter(x => x._2.size == 0)
       .count === 0)
 
-    // make sure vectors are not clustered in one bucket
+    //make sure vectors are not clustered in one bucket
     assert (model.bands
       .map(a => (a._1._1, a._1._2))
       .groupByKey().filter(x => x._2.size == n)
       .count === 0)
 
-    // make sure number of buckets for each bands is in expected range (2 - 2^numHashFunc)
+    //make sure number of buckets for each bands is in expected range (2 - 2^numHashFunc)
     assert (model.bands
       .map(a => (a._1._1, a._1._2))
       .groupByKey()
@@ -77,16 +77,16 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
       .filter(a => a._2.size < 1 || a._2.size > math.pow(2, numHashFunc))
       .count === 0)
 
-    // test save/load operations
+    //test save/load operations
     val temp = "target/test/" + System.currentTimeMillis().toString
     model.save(sc, temp)
     val model2 = LSHModel.load(sc, temp)
 
-    // make sure size of saved and loaded models are the same
+    //make sure size of saved and loaded models are the same
     assert(model.bands.count === model2.bands.count)
     assert(model.hashFunctions.size === model2.hashFunctions.size)
 
-    // make sure loaded model produce the same hashValue with the original
+    //make sure loaded model produce the same hashValue with the original
     val testRDD = vectorsRDD.take(10)
     testRDD.foreach(x => assert(model.hashValue(x._2, x._1) === model2.hashValue(x._2, x._1)))
 

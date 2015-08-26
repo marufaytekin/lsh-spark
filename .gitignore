@@ -20,5 +20,5 @@ project/plugins/project/
 /data/ml-1m.data
 .worksheet
 .idea/*
-
+*.iml
 
