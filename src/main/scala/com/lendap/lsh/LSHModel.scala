@@ -52,7 +52,7 @@ class LSHModel(val m: Int, val numHashFunc : Int, val numBands: Int)
       .map(x => (x._1, x._2.mkString(""))).toList
 
   /** returns candidate set for given vector id.*/
-  def getCandidateList(vId: Long): RDD[Long] = {
+  def getCandidates(vId: Long): RDD[Long] = {
     val buckets = bands.filter(x => x._2 == vId).map(x => x._1).distinct().collect()
     bands.filter(x => buckets contains x._1).map(x => x._2).filter(x => x != vId)
   }

@@ -49,7 +49,7 @@ object Main {
     model.bands.take(10) foreach println
 
     //get the near neighbors of userId: 4587 in the model
-    val candList = model.getCandidateList(4587)
+    val candList = model.getCandidates(4587)
     println(candList.count() + " : " + candList.collect().toList)
 
     //save model
