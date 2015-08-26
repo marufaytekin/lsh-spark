@@ -14,7 +14,7 @@ trait LocalSparkContext extends BeforeAndAfterAll { self: Suite =>
   override def beforeAll() {
     val conf = new SparkConf()
       .setMaster("local")
-      .setAppName("test")
+      .setAppName("lsh-test")
     sc = new SparkContext(conf)
     super.beforeAll()
   }
