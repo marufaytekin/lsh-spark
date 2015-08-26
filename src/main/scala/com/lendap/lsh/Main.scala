@@ -28,15 +28,19 @@ object Main {
 
     //read data file in as a RDD, partition RDD across <partitions> cores
     val data = sc.textFile(dataFile, numPartitions)
+
     //parse data and create (user, item, rating) tuples
     val ratingsRDD = data
       .map(line => line.split("::"))
       .map(elems => (elems(0).toInt, elems(1).toInt, elems(2).toDouble))
+
     //list of distinct items
     val items = ratingsRDD.map(x => x._2).distinct()
     val maxIndex = items.max + 1
+
     //user item ratings
     val userItemRatings = ratingsRDD.map(x => (x._1, (x._2, x._3))).groupByKey().cache()
+
     //convert each user ratings to sparse vector (user_id, Vector_of_ratings)
     val sparseVectorData = userItemRatings
       .map(a=>(a._1.toLong, Vectors.sparse(maxIndex, a._2.toSeq).asInstanceOf[SparseVector]))
