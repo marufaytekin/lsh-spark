@@ -1,13 +1,9 @@
 package com.lendap.lsh
 
 import org.apache.spark.SparkContext
-import org.apache.spark.SparkContext._
 import org.apache.spark.SparkConf
 
 import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
-import org.apache.spark.mllib.random.RandomRDDs
-import org.apache.spark.rdd.RDD
-import org.apache.spark.mllib.recommendation.Rating
 
 
 /**
@@ -38,15 +34,15 @@ object Main {
     val items = ratingsRDD.map(x => x._2).distinct()
     val maxIndex = items.max + 1
 
-    //user item ratings
+    //user ratings grouped by user_id
     val userItemRatings = ratingsRDD.map(x => (x._1, (x._2, x._3))).groupByKey().cache()
 
-    //convert each user ratings to sparse vector (user_id, Vector_of_ratings)
+    //convert each user's rating to tuple of (user_id, SparseVector_of_ratings)
     val sparseVectorData = userItemRatings
       .map(a=>(a._1.toLong, Vectors.sparse(maxIndex, a._2.toSeq).asInstanceOf[SparseVector]))
 
     //run locality sensitive hashing model with 6 bands and 8 hash functions
-    val lsh = new  LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
+    val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
     val model = lsh.run
 
     //print sample hashed vectors in ((bandId#, hashValue), vectorId) format
@@ -54,7 +50,9 @@ object Main {
 
     //get the near neighbors of userId: 4587 in the model
     val candList = model.getCandidates(4587)
-    println(candList.count() + " : " + candList.collect().toList)
+    println("Number of Candidate Neighbors: ")
+    println(candList.count())
+    println("Candidate List: " + candList.collect().toList)
 
     //save model
     val temp = "target/" + System.currentTimeMillis().toString
@@ -63,7 +61,9 @@ object Main {
     //load model
     val modelLoaded = LSHModel.load(sc, temp)
 
-    modelLoaded.bands.take(10) foreach println
+    //print out 10 entries from loaded model
+    modelLoaded.bands.take(15) foreach println
+
 
   }
 
