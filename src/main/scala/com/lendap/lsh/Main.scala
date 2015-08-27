@@ -43,7 +43,7 @@ object Main {
 
     //run locality sensitive hashing model with 6 bands and 8 hash functions
     val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
-    val model = lsh.run
+    val model = lsh.run()
 
     //print sample hashed vectors in ((bandId#, hashValue), vectorId) format
     model.bands.take(10) foreach println
@@ -64,6 +64,22 @@ object Main {
     //print out 10 entries from loaded model
     modelLoaded.bands.take(15) foreach println
 
+    //create a user vector with ratings on movies
+    val movies = List(1,6,17,29,32,36,76,137,154,161,172,173,185,223,232,235,260,272,296,300,314,316,318,327,337,338,348)
+    val ratings = List(5.0,4.0,4.0,5.0,5.0,4.0,5.0,3.0,4.0,4.0,4.0,4.0,4.0,5.0,5.0,4.0,5.0,5.0,4.0,4.0,4.0,5.0,5.0,5.0,4.0,4.0,4.0)
+    val sampleVector = Vectors.sparse(maxIndex, movies zip ratings).asInstanceOf[SparseVector]
+    println(sampleVector)
+
+    //generate hash values for each bucket
+    val hashValues = model.hashValue(sampleVector)
+    println(hashValues)
+
+    //query LSH model for candidate set
+    val candidateList = model.getCandidates(sampleVector)
+    println(candidateList.collect().toList)
+
+    val candidateListLoaded = modelLoaded.getCandidates(sampleVector)
+    println(candidateListLoaded.collect().toList)
 
   }
 

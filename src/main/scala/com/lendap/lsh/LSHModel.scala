@@ -46,10 +46,10 @@ class LSHModel(val m: Int, val numHashFunc : Int, val numBands: Int)
   }
 
   /** creates hashValue for each band.*/
-  def hashValue(data: SparseVector, vId: Long): List[(Int, String)] =
-    hashFunctions.map(a => (a._2, a._1.hash(data)))
-      .groupBy(_._1)
-      .map(x => (x._1, x._2.mkString(""))).toList
+  def hashValue(data: SparseVector): List[(Int, String)] =
+    hashFunctions.map(a => (a._2 % numBands, a._1.hash(data)))
+    .groupBy(_._1)
+    .map(x => (x._1, x._2.map(_._2).mkString(""))).toList
 
   /** returns candidate set for given vector id.*/
   def getCandidates(vId: Long): RDD[Long] = {
@@ -57,9 +57,15 @@ class LSHModel(val m: Int, val numHashFunc : Int, val numBands: Int)
     bands.filter(x => buckets contains x._1).map(x => x._2).filter(x => x != vId)
   }
 
+  /** returns candidate set for given vector.*/
+  def getCandidates(v: SparseVector): RDD[Long] = {
+    val hashVal = hashValue(v)
+    bands.filter(x => hashVal contains x._1).map(x => x._2)
+  }
+
   /** adds a new sparse vector with vector Id: vId to the model. */
   def add (vId: Long, v: SparseVector, sc: SparkContext): LSHModel = {
-    val newRDD = sc.parallelize(hashValue(v, vId).map(a => (a, vId)))
+    val newRDD = sc.parallelize(hashValue(v).map(a => (a, vId)))
     bands ++ newRDD
     this
   }
