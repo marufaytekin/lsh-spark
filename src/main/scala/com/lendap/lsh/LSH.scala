@@ -14,7 +14,7 @@ import org.apache.spark.rdd.RDD
   * @param data RDD of sparse vectors with vector Ids. RDD(vec_id, SparseVector)
   * @param m max number of possible elements in a vector
   * @param numHashFunc number of hash functions
-  * @param numBands number of bands. This parameter sometimes called buckets or hash tables as well.
+  * @param numBands number of bands. This parameter sometimes called hash tables as well.
   *
   * */
 class LSH(data : RDD[(Long, SparseVector)] = null, m: Int = 0, numHashFunc : Int = 4, numBands : Int = 4) extends Serializable {
@@ -40,16 +40,5 @@ class LSH(data : RDD[(Long, SparseVector)] = null, m: Int = 0, numHashFunc : Int
     model
 
   }
-
-  def compare [T] (v1: T, v2: T): Double = ???
-
-
-  def remove [T] (v : SparseVector) = ???
-
-  //def load [T] (sc: SparkContext, path: String): LSHModel = {
-  //  val model = new LSHModel(m, numHashFunc, numBands)
-  //  None
-  //}
-
 
 }
