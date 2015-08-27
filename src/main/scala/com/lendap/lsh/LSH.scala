@@ -41,15 +41,4 @@ class LSH(data : RDD[(Long, SparseVector)] = null, m: Int = 0, numHashFunc : Int
 
   }
 
-  def compare [T] (v1: T, v2: T): Double = ???
-
-
-  def remove [T] (v : SparseVector) = ???
-
-  //def load [T] (sc: SparkContext, path: String): LSHModel = {
-  //  val model = new LSHModel(m, numHashFunc, numBands)
-  //  None
-  //}
-
-
 }
