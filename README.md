@@ -91,7 +91,7 @@ println("Number of Candidate Neighbors: "+ candList.count())
 println("Candidate List: " + candList.collect().toList)
 ```
 
-172 neighbors found for user: 4587:
+172 neighbors found for user 4587:
 
 ```
 #!shell
@@ -101,14 +101,7 @@ Candidate List: List(1708, 5297, 1973, 4691, 2864, 903, 30, 501, 2433, 3317, 226
 
 ### Find Similar Users for Vector ###
 
-Let's find the similar users to a user whose rating data on movies as follows:  
-  
-```
-#!shell
-movies = List(1,6,17,29,32,36,76,137,154,161,172,173,185,223,232,235,260,272,296,300,314,316,318,327,337,338,348)
-ratings = List(5.0,4.0,4.0,5.0,5.0,4.0,5.0,3.0,4.0,4.0,4.0,4.0,4.0,5.0,5.0,4.0,5.0,5.0,4.0,4.0,4.0,5.0,5.0,5.0,4.0,4.0,4.0)
-```
-We convert this data to a SparseVector:
+Let's find the similar users to a user whose rating data on movies. We convert this data to a SparseVector:
 ```
 #!scala
 val movies = List(1,6,17,29,32,36,76,137,154,161,172,173,185,223,232,235,260,272,296,300,314,316,318,327,337,338,348)
@@ -130,14 +123,14 @@ List(3925, 4607, 3292, 2919, 240, 4182, 5244, 1452, 4526, 3831, 305, 4341, 2939,
 
 ### Hash Values for Vectors ###
 
-Retrieve hash values for a vector:
-
+We can retrieve hash values for a vector as follows:
+```
 #!scala
 val hashValues = model.hashValue(sampleVector)
 println(hashValues)
 ```
 
-Generates list of hash values for each band in (band#, hashValue) format:
+Generated list of hash values for each band in (band#, hashValue) format:
 
 ```
 #!shell
@@ -151,7 +144,7 @@ We add new user with ratings vector as follows:
 #!scala
 val model = model.add(id, v, sc)
 ```
-where id is user id, v is the SparseVector of ratings for the user, and sc is SparkContext.
+where id, v, and sc are user id, SparseVector of ratings, and SparkContext respectively.
 
 ### Remove an Existing User ###
 
@@ -176,7 +169,7 @@ model.save(sc, temp)
 val modelLoaded = LSHModel.load(sc, temp)
 
 //print out 10 entries from loaded model
-modelLoaded.bands.take(15) foreach println
+modelLoaded.bands.take(10) foreach println
 ```
 Output is as follows:
 
@@ -192,10 +185,5 @@ Output is as follows:
 ((3,10011010),3698)
 ((3,10100010),2941)
 ((2,11010101),4488)
-((3,10111011),2083)
-((5,11100011),2895)
-((1,11101001),213)
-((3,00011110),1296)
-((0,10100100),4387)
 ```
 
