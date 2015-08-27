@@ -58,11 +58,26 @@ Now we can use sparseVectorData to build LSH model.
 ```
 #!scala
 //run locality sensitive hashing model with 6 bands and 8 hash functions
-val lsh = new  LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
+val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
 val model = lsh.run
 
 //print sample hashed vectors in ((bandId#, hashValue), user_id) format
 model.bands.take(10) foreach println
+```
+Output is as follows:
+
+```
+#!shell
+((1,10100000),4289)
+((5,01001100),649)
+((3,10011011),5849)
+((0,11000110),5221)
+((1,01010100),3688)
+((1,00001110),354)
+((0,11000110),5118)
+((3,00001011),3698)
+((3,11010011),2941)
+((2,11010010),4488)
 ```
 
 ### Find Similar Users ###
@@ -102,10 +117,9 @@ val model = model.remove(id, sc)
 ```
 where id is user id and sc is SparkContext.
 
-  
 ### Save/Load The Model ###
 
-Trained model can be saved to HDFS and loaded from HDFS as follows:
+Trained model can be saved and loaded to/from HDFS as follows:
 
 ```
 #!scala
@@ -117,5 +131,26 @@ model.save(sc, temp)
 val modelLoaded = LSHModel.load(sc, temp)
 
 //print out 10 entries from loaded model
-modelLoaded.bands.take(10) foreach println
+modelLoaded.bands.take(15) foreach println
 ```
+Output is as follows:
+
+```
+#!shell
+((1,11101110),4289)
+((5,11100001),649)
+((3,11001111),5849)
+((0,10100101),5221)
+((1,01110001),3688)
+((1,11110010),354)
+((0,10010100),5118)
+((3,10011010),3698)
+((3,10100010),2941)
+((2,11010101),4488)
+((3,10111011),2083)
+((5,11100011),2895)
+((1,11101001),213)
+((3,00011110),1296)
+((0,10100100),4387)
+```
+
