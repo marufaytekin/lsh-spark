@@ -11,7 +11,7 @@ import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
  */
 object Main {
 
-  /** Sample usage of LSH movie rating data.*/
+  /** Sample usage of LSH on movie rating data.*/
   def main(args: Array[String]) {
 
     //init spark context
