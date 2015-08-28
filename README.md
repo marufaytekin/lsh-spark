@@ -205,7 +205,7 @@ random hyperplane based hash functions for vectors.
 - Hasher functions use randomly generated vectors whose elements are in [-1, 1] interval.
 "Instead of chosing a random vector from all possible vectors, it turns out to be
 sufficiently random if we restrict our choice to vectors whose components are
-+1 and ?1." (See section 3.7.3 of chapter 3 in [Mining of Massive Datasets] (http://mmds.org))
++1 and -1." (See section 3.7.3 of chapter 3 in [Mining of Massive Datasets] (http://mmds.org))
 
 - Hashing function calculates dot product of an input vector with a randomly generated 
 hash function then produce a hash value (0 or 1) based on the result of dot product. 
