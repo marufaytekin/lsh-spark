@@ -208,7 +208,7 @@ Sample 10 entries from loaded model printed out as follows:
 of bands and *r* is number of rows (hash functions) in each band.
 
 - If we define *t* as similarity threshold for vectors to be considered as a desired
-“similar pair.” The threshold *t* is approximately *(1/b)^1/r*. Select *b* and *r*
+“similar pair.” The threshold *t* is approximately (1/b)<sup>1/r</sup>. Select *b* and *r*
 to produce a threshold lower than *t* to avoid false negatives, select *b* and *r* to
 produce a higher threshold to increase speed and decrease false positives (See section
 3.4.3 of [Mining of Massive Datasets] (http://mmds.org) for details.)
