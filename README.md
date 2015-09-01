@@ -16,7 +16,7 @@ vectors to produce hash values. This implementation also uses banding technique
 (see [Mining of Massive Datasets] (http://mmds.org) book) to reduce the false 
 positives and false negatives.
 
-This implementation is inspired from spark-hash project on github.
+The implementation is inspired from spark-hash project on github.
 
 ## Build ##
 
