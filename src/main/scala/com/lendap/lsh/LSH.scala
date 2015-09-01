@@ -4,7 +4,6 @@ package com.lendap.lsh
  * Created by maruf on 09/08/15.
  */
 
-import org.apache.spark.SparkContext
 import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
 
@@ -39,6 +38,13 @@ class LSH(data : RDD[(Long, SparseVector)] = null, m: Int = 0, numHashFunc : Int
 
     model
 
+  }
+
+  def cosine(a: SparseVector, b: SparseVector): Double = {
+    val intersection = a.indices.intersect(b.indices)
+    val magnitudeA = intersection.map(x => Math.pow(a.apply(x), 2)).sum
+    val magnitudeB = intersection.map(x => Math.pow(b.apply(x), 2)).sum
+    intersection.map(x => a.apply(x) * b.apply(x)).sum / (Math.sqrt(magnitudeA) * Math.sqrt(magnitudeB))
   }
 
 }

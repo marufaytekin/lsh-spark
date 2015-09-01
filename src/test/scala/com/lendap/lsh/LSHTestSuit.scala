@@ -8,13 +8,13 @@ import org.scalatest.FunSuite
 */
 class LSHTestSuit extends FunSuite with LocalSparkContext {
 
-  test("hasher") {
+  val simpleDataRDD = List(
+    List(5.0,3.0,4.0,5.0,5.0,1.0,5.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
+    List(1.0,2.0,1.0,5.0,1.0,5.0,1.0,4.0,1.0,3.0).zipWithIndex.map(a=>a.swap),
+    List(5.0,3.0,4.0,1.0,5.0,4.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
+    List(1.0,3.0,4.0,5.0,5.0,1.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap))
 
-    val simpleDataRDD = List(
-      List(5.0,3.0,4.0,5.0,5.0,1.0,5.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
-      List(1.0,2.0,1.0,5.0,1.0,5.0,1.0,4.0,1.0,3.0).zipWithIndex.map(a=>a.swap),
-      List(5.0,3.0,4.0,1.0,5.0,4.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
-      List(1.0,3.0,4.0,5.0,5.0,1.0,1.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap))
+  test("hasher") {
 
     val h = Hasher(10, 12345678)
     val rdd = sc.parallelize(simpleDataRDD)
@@ -89,6 +89,15 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     //make sure loaded model produce the same hashValue with the original
     val testRDD = vectorsRDD.take(10)
     testRDD.foreach(x => assert(model.hashValue(x._2) == model2.hashValue(x._2)))
+
+    //test cosine similarity
+    val rdd = sc.parallelize(simpleDataRDD)
+    //convert data to RDD of SparseVector
+    val vectorRDD = rdd.map(a => Vectors.sparse(a.size, a).asInstanceOf[SparseVector])
+    val a = vectorRDD.take(4)(0)
+    val b = vectorRDD.take(4)(3)
+    assert(lsh.cosine(a, b) === 0.9061030445113443)
+
 
   }
 
