@@ -16,6 +16,8 @@ vectors to produce hash values. This implementation also uses banding technique
 (see [Mining of Massive Datasets] (http://mmds.org) book) to reduce the false 
 positives and false negatives.
 
+The implementation is inspired from spark-hash project on github.
+
 ## Build ##
 
 This is an SBT project.
@@ -155,6 +157,17 @@ Generated list of hash values for each band in (band#, hashValue) format:
 ```
 List((0,10101100), (5,01110100), (1,01001110), (2,10000000), (3,10101111), (4,00101100))
 ```
+
+### Hash Values ###
+
+We can retrieve list of hashValues in each bucket as follows:
+
+```scala
+val bucketHashValues = bands.map(x => x._1).groupByKey()
+```
+
+This returns an RDD [(Int, Iterable [String])]  
+
 
 ### Add New User ###
 
