@@ -4,6 +4,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
 
 import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
+import org.apache.spark.rdd.PairRDDFunctions
 
 
 /**
@@ -75,11 +76,13 @@ object Main {
     println(hashValues)
 
     //query LSH model for candidate set
-    val candidateList = model.getCandidates(sampleVector)
-    println(candidateList.collect().toList)
+    val candidateList = model.getCandidates(sampleVector).collect()
+    println(candidateList.toList)
 
-    val candidateListLoaded = modelLoaded.getCandidates(sampleVector)
-    println(candidateListLoaded.collect().toList)
+    //compute similarity of sampleVector with users in candidate set
+    val candidateVectors = sparseVectorData.filter(x => candidateList.contains(x._1)).cache()
+    val similarities = candidateVectors.map(x => (x._1, lsh.cosine(x._2, sampleVector)))
+    similarities foreach println
 
   }
 
