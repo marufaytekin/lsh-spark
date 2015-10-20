@@ -16,27 +16,21 @@ import scala.util.Random
  */
 class Hasher(val r: Array[Double]) extends Serializable {
 
-  /**
-    * hash SparseVector u with random vector r
-    */
+  /** hash SparseVector v with random vector r */
   def hash(u : SparseVector) : Int = {
     val rVec: Array[Double] = u.indices.map(i => r(i))
     val hashVal = (rVec zip u.values).map(_tuple => _tuple._1 * _tuple._2).sum
     if (hashVal > 0) 1 else 0
   }
-}
 
+}
 
 object Hasher {
 
-  /**
-    * create a new instance providing size of the random vector Array [Double]
-    */
+  /** create a new instance providing size of the random vector Array [Double] */
   def apply (size: Int, seed: Long = System.nanoTime) = new Hasher(r(size, seed))
 
-  /**
-    * create a random vector whose whose components are -1 and +1
-    */
+  /** create a random vector whose whose components are -1 and +1 */
   def r(size: Int, seed: Long) : Array[Double] = {
     val buf = new ArrayBuffer[Double]
     val rnd = new Random(seed)

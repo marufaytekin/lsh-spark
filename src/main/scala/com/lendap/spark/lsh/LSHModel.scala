@@ -152,10 +152,8 @@ object LSHModel {
 }
 
 
-/**
-  * Helper functions for save/load data from mllib package.
-  * TODO: Remove and use Loader functions from mllib.
-  */
+/** Helper functions for save/load data from mllib package.
+  * TODO: Remove and use Loader functions from mllib. */
 private[lsh] object Loader {
 
   /** Returns URI for path/data using the Hadoop filesystem */
