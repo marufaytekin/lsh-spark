@@ -1,4 +1,4 @@
-package com.lendap.lsh
+package com.lendap.spark.lsh
 
 import org.apache.spark.mllib.linalg.{SparseVector, Vectors}
 import org.scalatest.FunSuite
@@ -8,7 +8,7 @@ import org.scalatest.FunSuite
 */
 class LSHTestSuit extends FunSuite with LocalSparkContext {
 
-  test("hasher") {
+  test("hasher test") {
 
     val simpleDataRDD = List(
       List(5.0,3.0,4.0,5.0,5.0,1.0,5.0,3.0,4.0,5.0).zipWithIndex.map(a=>a.swap),
@@ -35,9 +35,9 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
 
   }
 
-  test ("lsh") {
+  test ("lsh test") {
 
-    val numBands = 5
+    val numHashTables = 5
     val numHashFunc = 4
     val m = 50 //number of elements in each vector
     val n = 30 //number of data points (vectors)
@@ -48,29 +48,29 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
       .map(a => (a, List.fill(m)(1 + rnd.nextInt(5).toDouble).zipWithIndex.map(x => x.swap)))
     val vectorsRDD = sc.parallelize(dataRDD).map(a => (a._1.toLong, Vectors.sparse(a._2.size, a._2).asInstanceOf[SparseVector]))
 
-    val lsh = new  LSH(vectorsRDD, m, numHashFunc, numBands)
+    val lsh = new  LSH(vectorsRDD, m, numHashFunc, numHashTables)
     val model = lsh.run()
 
-    //make sure numBands bands created
-    assert (model.bands.map(a => a._1._1).collect().distinct.length == numBands)
+    //make sure numHashTables hashTables created
+    assert (model.hashTables.map(a => a._1._1).collect().distinct.length == numHashTables)
 
     //make sure each key size matches with number of hash functions
-    assert (model.bands.filter(a => a._1._2.length != numHashFunc).count == 0)
+    assert (model.hashTables.filter(a => a._1._2.length != numHashFunc).count == 0)
 
     //make sure there is no empty bucket
-    assert (model.bands
+    assert (model.hashTables
       .map(a => (a._1._2, a._2))
       .groupByKey().filter(x => x._2.isEmpty)
       .count == 0)
 
     //make sure vectors are not clustered in one bucket
-    assert (model.bands
+    assert (model.hashTables
       .map(a => (a._1._1, a._1._2))
       .groupByKey().filter(x => x._2.size == n)
       .count == 0)
 
-    //make sure number of buckets for each bands is in expected range (2 - 2^numHashFunc)
-    assert (model.bands
+    //make sure number of buckets for each hashTables is in expected range (2 - 2^numHashFunc)
+    assert (model.hashTables
       .map(a => (a._1._1, a._1._2))
       .groupByKey()
       .map(a => (a._1, a._2.toList.distinct))
@@ -83,7 +83,7 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     val model2 = LSHModel.load(sc, temp)
 
     //make sure size of saved and loaded models are the same
-    assert(model.bands.count == model2.bands.count)
+    assert(model.hashTables.count == model2.hashTables.count)
     assert(model.hashFunctions.size == model2.hashFunctions.size)
 
     //make sure loaded model produce the same hashValue with the original
@@ -91,5 +91,6 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     testRDD.foreach(x => assert(model.hashValue(x._2) == model2.hashValue(x._2)))
 
   }
+
 
 }

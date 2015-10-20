@@ -1,7 +1,8 @@
 # Locality Sensitive Hashing for Apache Spark #
 
 Locality-sensitive hashing (LSH) is an approximate nearest neighbor search and 
-clustering method (http://www.mit.edu/~andoni/LSH/). Locality-Sensitive functions 
+clustering method for high dimensional data points (http://www.mit.edu/~andoni/LSH/). 
+Locality-Sensitive functions 
 take two data points and decide about whether or not they should be a candidate 
 pair. LSH hashes input data points multiple times in a way that similar data 
 points map to the same "buckets" with a high probability than dissimilar data 
@@ -12,9 +13,8 @@ is based on Charikar's LSH schema for cosine distance described in
 [Similarity Estimation Techniques from Rounding Algorithms]
 (http://www.cs.princeton.edu/courses/archive/spr04/cos598B/bib/CharikarEstim.pdf) 
 paper. This scheme uses random hyperplane based hash functions for collection of 
-vectors to produce hash values. This implementation also uses banding technique 
-(see [Mining of Massive Datasets] (http://mmds.org) book) to reduce the false 
-positives and false negatives.
+vectors to produce hash values. The model build (preprocessing) and query answering 
+algorithms implemented as described in Figures 1 and 2 of http://www.vldb.org/conf/1999/P49.pdf.
 
 ## Build ##
 
@@ -75,13 +75,20 @@ val sparseVectorData = userItemRatings
 Finally, we use sparseVectorData to build LSH model as follows: 
 
 ```scala
-//run locality sensitive hashing model with 6 bands and 8 hash functions
-val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
+//run locality sensitive hashing model with 6 hashTables and 8 hash functions
+val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numHashTables = 6)
 val model = lsh.run()
-
-//print sample hashed vectors in ((bandId#, hashValue), user_id) format
-model.bands.take(10) foreach println
 ```
+
+Number of hash functions (number of rows) for each hashTable and number of hashTables
+need to be given to LSH. See implementation details for more information for
+selecting number of hashTables and hash functions.
+
+```scala
+//print sample hashed vectors in ((hashTableId#, hashValue), user_id) format
+model.hashTables.take(10) foreach println
+```
+
 Sample 10 entries from the model printed out as follows:
 
 ```
@@ -134,6 +141,14 @@ Following user list is returned as candidate list:
 List(3925, 4607, 3292, 2919, 240, 4182, 5244, 1452, 4526, 3831, 305, 4341, 2939, 2731, 627, 5685, 1656, 3597, 3268, 2908, 1675, 5124, 4588, 5112, 4620, 890, 3655, 5642, 4737, 372, 5916, 3806, 6037, 5384, 1888, 4059, 996, 660, 889, 5020, 2871, 2107, 5080, 1638, 588, 4486, 2945, 335, 2013, 363, 1257, 117, 2848, 417, 1101, 2171, 4526, 147, 411, 3709, 3941, 904, 4442, 1576, 1177, 3844, 5527, 5280, 2998, 287, 3575, 4461, 1548, 5698, 2039, 5283, 5454, 1288, 741, 1496, 11, 3829, 4201, 985, 3862, 2908, 3658, 3594, 5970, 1115, 5690, 5082, 5707, 6030, 555, 4260, 780, 6028, 1353, 5433, 1593, 3933, 5328, 3649, 2700, 3117, 215, 4944, 4266, 3388, 5079, 1483, 1762, 2654)
 ```
 
+### Find Similarity of Vectors ###
+
+Let *a* and *b* two sparse vectors for two users. We can find similarity of these 
+users based on cosine similarity as follows: 
+```scala
+val similarity = lsh.cosine(a, b)
+```
+
 ### Hash Values for Vectors ###
 
 We can retrieve hash values for a vector as follows:
@@ -142,11 +157,25 @@ val hashValues = model.hashValue(sampleVector)
 println(hashValues)
 ```
 
-Generated list of hash values for each band in (band#, hashValue) format:
+Generated list of hash values for each hashTable in (hashTable#, hashValue) format:
 
 ```
 List((0,10101100), (5,01110100), (1,01001110), (2,10000000), (3,10101111), (4,00101100))
 ```
+
+Note that these are the bucket IDs that the vector maps to in each hash table. 
+ 
+ 
+### Hash Values ###
+
+We can retrieve list of hashValues in hash tables as follows:
+
+```scala
+val hashValues = hashTables.map(x => x._1).groupByKey()
+```
+
+This returns an RDD [(Int, Iterable [String])]  
+
 
 ### Add New User ###
 
@@ -177,7 +206,7 @@ model.save(sc, temp)
 val modelLoaded = LSHModel.load(sc, temp)
 
 //print out 10 entries from loaded model
-modelLoaded.bands.take(10) foreach println
+modelLoaded.hashTables.take(10) foreach println
 ```
 Sample 10 entries from loaded model printed out as follows:
 
@@ -196,28 +225,37 @@ Sample 10 entries from loaded model printed out as follows:
 
 ## Implementation Details ##
 
-Implementation details of LSH can be detailed in following steps:
+- LSH hashes each vector multiple times (b * r) with hash functions, where *b* is number
+of hash tables (bands) and *r* is number of rows (hash functions) in each hash table.
 
-- Hash each vector multiple times (numHashFunc * numBands times) with number of hash 
-functions. Hashing function is defined in com.lendap.lsh.Hasher class and uses 
-random hyperplane based hash functions for vectors. 
+- If we define *t* as similarity threshold for vectors to be considered as a desired
+“similar pair.” The threshold *t* is approximately (1/b)<sup>1/r</sup>. Select *b* and *r*
+to produce a threshold lower than *t* to avoid false negatives, select *b* and *r* to
+produce a higher threshold to increase speed and decrease false positives (See section
+3.4.3 of [Mining of Massive Datasets] (http://mmds.org) for details.)
 
-- Hasher functions use randomly generated vectors whose elements are in [-1, 1] interval.
-"Instead of chosing a random vector from all possible vectors, it turns out to be
-sufficiently random if we restrict our choice to vectors whose components are
-+1 and -1." (See section 3.7.3 of chapter 3 in [Mining of Massive Datasets] (http://mmds.org))
+- Hasher function is defined in com.lendap.spark.lsh.Hasher class and uses random hyperplane
+based hash functions which operate on vectors.
+
+- Hasher functions use randomly generated vectors whose elements are in [-1, 1]
+interval. It is sufficiently random if we randomly select vectors whose components
+are +1 and -1 (See section 3.7.3 of [Mining of Massive Datasets] - http://mmds.org.)
 
 - Hashing function calculates dot product of an input vector with a randomly generated 
 hash function then produce a hash value (0 or 1) based on the result of dot product. 
-Each hasher produce a hash value for the vector. Then all hash values are combine 
-with AND-construction to produce a hash signature for the input vector.
+Each hasher produce a hash value for the vector. Then all hash values are combined
+with *AND-construction* to produce a hash signature (e.g. 11110010) for the input vector.
 
-- Each hash signature is divided into bands and the data points in a band that share 
-the same signature group together in the same bucket.
+- Hash signatures for the input vectors are used as bucket ids as described in 
+ http://www.vldb.org/conf/1999/P49.pdf. The model build (preprocessing) and 
+ query answering algorithms implemented as described in Figures 1 and 2 of this paper.
+
+- Hashed vectors are stored in model.hashTables as *RDD[((Int, String), Long)]* where each entry
+is *((hashTable#, hash_value), vector_id)* data.
 
 - The results can be filtered by passing a filter function to the model. 
 
-- Trained model can be saved to HDFS with model.save function.
+- Trained model can be saved to HDFS with *model.save* function.
  
-- Saved model can be loaded from HDFS wirh model.load function.
+- Saved model can be loaded from HDFS with *model.load* function.
 

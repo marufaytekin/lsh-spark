@@ -1,4 +1,4 @@
-package com.lendap.lsh
+package com.lendap.spark.lsh
 
 import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
@@ -41,12 +41,12 @@ object Main {
     val sparseVectorData = userItemRatings
       .map(a=>(a._1.toLong, Vectors.sparse(maxIndex, a._2.toSeq).asInstanceOf[SparseVector]))
 
-    //run locality sensitive hashing model with 6 bands and 8 hash functions
-    val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
+    //run locality sensitive hashing model with 6 hashTables and 8 hash functions
+    val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numHashTables = 6)
     val model = lsh.run()
 
-    //print sample hashed vectors in ((bandId#, hashValue), vectorId) format
-    model.bands.take(10) foreach println
+    //print sample hashed vectors in ((hashTableId#, hashValue), vectorId) format
+    model.hashTables.take(10) foreach println
 
     //get the near neighbors of userId: 4587 in the model
     val candList = model.getCandidates(4587)
@@ -62,7 +62,7 @@ object Main {
     val modelLoaded = LSHModel.load(sc, temp)
 
     //print out 10 entries from loaded model
-    modelLoaded.bands.take(15) foreach println
+    modelLoaded.hashTables.take(15) foreach println
 
     //create a user vector with ratings on movies
     val movies = List(1,6,17,29,32,36,76,137,154,161,172,173,185,223,232,235,260,272,296,300,314,316,318,327,337,338,348)
@@ -80,6 +80,7 @@ object Main {
 
     val candidateListLoaded = modelLoaded.getCandidates(sampleVector)
     println(candidateListLoaded.collect().toList)
+
 
   }
 
