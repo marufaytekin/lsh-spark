@@ -1,4 +1,4 @@
-package com.lendap.lsh
+package com.lendap.spark.lsh
 
 /**
  * Created by maruf on 09/08/15.

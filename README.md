@@ -13,9 +13,8 @@ is based on Charikar's LSH schema for cosine distance described in
 [Similarity Estimation Techniques from Rounding Algorithms]
 (http://www.cs.princeton.edu/courses/archive/spr04/cos598B/bib/CharikarEstim.pdf) 
 paper. This scheme uses random hyperplane based hash functions for collection of 
-vectors to produce hash values. This implementation also uses banding technique 
-(see [Mining of Massive Datasets] (http://mmds.org) book) to reduce the false 
-positives and false negatives.
+vectors to produce hash values. The model build (preprocessing) and query answering 
+algorithms implemented as described in Figures 1 and 2 of http://www.vldb.org/conf/1999/P49.pdf.
 
 The implementation is inspired from spark-hash project on github.
 
@@ -79,18 +78,18 @@ Finally, we use sparseVectorData to build LSH model as follows:
 
 
 ```scala
-//run locality sensitive hashing model with 6 bands and 8 hash functions
+//run locality sensitive hashing model with 6 hashTables and 8 hash functions
 val lsh = new LSH(sparseVectorData, maxIndex, numHashFunc = 8, numBands = 6)
 val model = lsh.run()
 ```
 
-Number of hash functions (number of rows) for each band and number of bands
+Number of hash functions (number of rows) for each hashTable and number of hashTables
 need to be given to LSH. See implementation details for more information for
-selecting number of bands and hash functions.
+selecting number of hashTables and hash functions.
 
 ```scala
-//print sample hashed vectors in ((bandId#, hashValue), user_id) format
-model.bands.take(10) foreach println
+//print sample hashed vectors in ((hashTableId#, hashValue), user_id) format
+model.hashTables.take(10) foreach println
 ```
 
 Sample 10 entries from the model printed out as follows:
@@ -161,7 +160,7 @@ val hashValues = model.hashValue(sampleVector)
 println(hashValues)
 ```
 
-Generated list of hash values for each band in (band#, hashValue) format:
+Generated list of hash values for each hashTable in (hashTable#, hashValue) format:
 
 ```
 List((0,10101100), (5,01110100), (1,01001110), (2,10000000), (3,10101111), (4,00101100))
@@ -172,7 +171,7 @@ List((0,10101100), (5,01110100), (1,01001110), (2,10000000), (3,10101111), (4,00
 We can retrieve list of hashValues in each bucket as follows:
 
 ```scala
-val bucketHashValues = bands.map(x => x._1).groupByKey()
+val bucketHashValues = hashTables.map(x => x._1).groupByKey()
 ```
 
 This returns an RDD [(Int, Iterable [String])]  
@@ -207,7 +206,7 @@ model.save(sc, temp)
 val modelLoaded = LSHModel.load(sc, temp)
 
 //print out 10 entries from loaded model
-modelLoaded.bands.take(10) foreach println
+modelLoaded.hashTables.take(10) foreach println
 ```
 Sample 10 entries from loaded model printed out as follows:
 
@@ -227,7 +226,7 @@ Sample 10 entries from loaded model printed out as follows:
 ## Implementation Details ##
 
 - LSH hashes each vector multiple times (b * r) with hash functions, where *b* is number
-of bands and *r* is number of rows (hash functions) in each band.
+of hash tables (bands) and *r* is number of hash functions (rows) in each hash table.
 
 - If we define *t* as similarity threshold for vectors to be considered as a desired
 “similar pair.” The threshold *t* is approximately (1/b)<sup>1/r</sup>. Select *b* and *r*
@@ -248,11 +247,12 @@ hash function then produce a hash value (0 or 1) based on the result of dot prod
 Each hasher produce a hash value for the vector. Then all hash values are combined
 with *AND-construction* to produce a hash signature (e.g. 11110010) for the input vector.
 
-- Each hash signature is divided into bands and the data points in a band that share 
-the same signature group together in the same bucket.
-
-- Hashed data is stored in model.bands as *RDD[((Int, String), Long)]* where each entry
-is *((bucket#, hash_value), vector_id)* data.
+- Hash signatures for the input vectors are used as bucket ids as described in 
+ http://www.vldb.org/conf/1999/P49.pdf. The model build (preprocessing) and 
+ query answering algorithms implemented as described in Figures 1 and 2 of this paper.
+ 
+- Hashed vectors are stored in model.hashTables as *RDD[((Int, String), Long)]* where each entry
+is *((hashTable#, hash_value), vector_id)* data.
 
 - The results can be filtered by passing a filter function to the model. 
 
