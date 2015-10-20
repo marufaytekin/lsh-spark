@@ -1,5 +1,4 @@
-package com.lendap.lsh
-
+package com.lendap.spark.lsh
 
 import org.apache.spark.mllib.linalg.SparseVector
 import scala.collection.mutable.ArrayBuffer
