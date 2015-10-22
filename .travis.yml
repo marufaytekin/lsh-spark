@@ -8,4 +8,4 @@ jdk:
 sudo: false
 script:
   - sbt -jvm-opts travis/jvmopts.compile compile
-  - sbt -jvm-opts travis/jvmopts.test scripted
+  - sbt ++$TRAVIS_SCALA_VERSION test
