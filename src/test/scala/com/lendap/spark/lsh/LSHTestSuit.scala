@@ -1,4 +1,4 @@
-package com.lendap.lsh
+package com.lendap.spark.lsh
 
 import org.apache.spark.mllib.linalg.{SparseVector, Vectors}
 import org.scalatest.FunSuite
@@ -51,26 +51,26 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     val lsh = new  LSH(vectorsRDD, m, numHashFunc, numBands)
     val model = lsh.run()
 
-    //make sure numBands bands created
-    assert (model.bands.map(a => a._1._1).collect().distinct.length == numBands)
+    //make sure numBands hashTables created
+    assert (model.hashTables.map(a => a._1._1).collect().distinct.length == numBands)
 
     //make sure each key size matches with number of hash functions
-    assert (model.bands.filter(a => a._1._2.length != numHashFunc).count == 0)
+    assert (model.hashTables.filter(a => a._1._2.length != numHashFunc).count == 0)
 
     //make sure there is no empty bucket
-    assert (model.bands
+    assert (model.hashTables
       .map(a => (a._1._2, a._2))
       .groupByKey().filter(x => x._2.isEmpty)
       .count == 0)
 
     //make sure vectors are not clustered in one bucket
-    assert (model.bands
+    assert (model.hashTables
       .map(a => (a._1._1, a._1._2))
       .groupByKey().filter(x => x._2.size == n)
       .count == 0)
 
-    //make sure number of buckets for each bands is in expected range (2 - 2^numHashFunc)
-    assert (model.bands
+    //make sure number of buckets for each hashTables is in expected range (2 - 2^numHashFunc)
+    assert (model.hashTables
       .map(a => (a._1._1, a._1._2))
       .groupByKey()
       .map(a => (a._1, a._2.toList.distinct))
@@ -83,7 +83,7 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
     val model2 = LSHModel.load(sc, temp)
 
     //make sure size of saved and loaded models are the same
-    assert(model.bands.count == model2.bands.count)
+    assert(model.hashTables.count == model2.hashTables.count)
     assert(model.hashFunctions.size == model2.hashFunctions.size)
 
     //make sure loaded model produce the same hashValue with the original
@@ -92,6 +92,7 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
 
     //test cosine similarity
     val rdd = sc.parallelize(simpleDataRDD)
+
     //convert data to RDD of SparseVector
     val vectorRDD = rdd.map(a => Vectors.sparse(a.size, a).asInstanceOf[SparseVector])
     val a = vectorRDD.take(4)(0)
