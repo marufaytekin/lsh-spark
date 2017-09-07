@@ -3,7 +3,7 @@ import Keys._
 
 object Settings {
   lazy val settings = Seq(
-    organization := "com.lendapp",
+    organization := "com.lendap",
     version := "0.1." + sys.props.getOrElse("buildNumber", default="0-SNAPSHOT"),
     scalaVersion := "2.10.4",
     publishMavenStyle := true,
