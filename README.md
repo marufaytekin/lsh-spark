@@ -1,5 +1,7 @@
 # Locality Sensitive Hashing for Apache Spark #
 
+[![Build Status](https://travis-ci.org/marufaytekin/lsh-spark.svg?branch=master)](https://travis-ci.org/marufaytekin/lsh-spark)
+
 Locality-sensitive hashing (LSH) is an approximate nearest neighbor search and 
 clustering method for high dimensional data points (http://www.mit.edu/~andoni/LSH/). 
 Locality-Sensitive functions 

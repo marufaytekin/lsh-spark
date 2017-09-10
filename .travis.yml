@@ -1,9 +1,13 @@
 language: scala
 scala:
   - 2.10.4
+  - 2.11.7
+  - 2.11.8
+  - 2.11.10
+  - 2.11.11
 jdk:
   - openjdk7
-  - openjdk6
+  - openjdk8
 sudo: false
 script:
   - sbt -jvm-opts travis/jvmopts.compile compile
