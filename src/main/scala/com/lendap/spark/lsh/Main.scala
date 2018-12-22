@@ -4,7 +4,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.SparkConf
 
 import org.apache.spark.mllib.linalg.{Vectors, SparseVector}
-import org.apache.spark.rdd.PairRDDFunctions
 
 
 /**

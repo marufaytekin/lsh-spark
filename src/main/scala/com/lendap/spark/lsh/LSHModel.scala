@@ -9,7 +9,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.mllib.linalg.SparseVector
 import org.apache.spark.rdd.RDD
 import scala.collection.mutable.ListBuffer
-import org.apache.spark.mllib.util.{Saveable}
+import org.apache.spark.mllib.util.Saveable
 
 import org.json4s._
 import org.json4s.JsonDSL._
@@ -28,12 +28,12 @@ class LSHModel(val m: Int, val numHashFunc : Int, val numHashTables: Int)
 
   /** generate numHashFunc * numBands randomly generated hash functions and store them in hashFunctions */
   private val _hashFunctions = ListBuffer[Hasher]()
-  for (i <- 0 until numHashFunc * numHashTables)
+  for (_ <- 0 until numHashFunc * numHashTables)
     _hashFunctions += Hasher(m)
   final var hashFunctions: List[(Hasher, Int)] = _hashFunctions.toList.zipWithIndex
 
   /** the "hashTables" ((hashTableID, hash key), vector_id) */
-  var hashTables: RDD[((Int, String), Long)] = null
+  var hashTables: RDD[((Int, String), Long)] = _
 
   /** generic filter function for hashTables. */
   def filter(f: (((Int, String), Long)) => Boolean): RDD[((Int, String), Long)] =
@@ -92,7 +92,7 @@ object LSHModel {
   private [lsh] object SaveLoadV0_0_1 {
 
     private val thisFormatVersion = "0.0.1"
-    private val thisClassName = this.getClass.getName()
+    private val thisClassName = this.getClass.getName
 
     def save(sc: SparkContext, model: LSHModel, path: String): Unit = {
 
@@ -118,8 +118,8 @@ object LSHModel {
 
     def load(sc: SparkContext, path: String): LSHModel = {
 
-      implicit val formats = DefaultFormats
-      val (className, formatVersion, metadata) = Loader.loadMetadata(sc, path)
+      implicit val formats: DefaultFormats.type = DefaultFormats
+      val (className, formatVersion, _) = Loader.loadMetadata(sc, path)
       assert(className == thisClassName)
       assert(formatVersion == thisFormatVersion)
       val hashTables = sc.textFile(Loader.dataPath(path))
@@ -136,9 +136,9 @@ object LSHModel {
       //check size of data
       assert(hashTables.count != 0, s"Loaded hashTable data is empty")
       //check size of hash functions
-      assert(hashers.size != 0, s"Loaded hasher data is empty")
+      assert(hashers.nonEmpty, s"Loaded hasher data is empty")
       //check hashValue size. Should be equal to numHashFunc
-      assert(hashTables.map(x => x._1._2).filter(x => x.size != numHashFunc).collect().size == 0,
+      assert(hashTables.map(x => x._1._2).filter(x => x.length != numHashFunc).collect().length == 0,
         s"hashValues in data does not match with hash functions")
 
       //create model
@@ -170,7 +170,7 @@ private[lsh] object Loader {
    * @return (class name, version, metadata)
    */
   def loadMetadata(sc: SparkContext, path: String): (String, String, JValue) = {
-    implicit val formats = DefaultFormats
+    implicit val formats: DefaultFormats.type = DefaultFormats
     val metadata = parse(sc.textFile(metadataPath(path)).first())
     val clazz = (metadata \ "class").extract[String]
     val version = (metadata \ "version").extract[String]

@@ -84,7 +84,7 @@ class LSHTestSuit extends FunSuite with LocalSparkContext {
 
     //make sure size of saved and loaded models are the same
     assert(model.hashTables.count == model2.hashTables.count)
-    assert(model.hashFunctions.size == model2.hashFunctions.size)
+    assert(model.hashFunctions.lengthCompare(model2.hashFunctions.size) == 0)
 
     //make sure loaded model produce the same hashValue with the original
     val testRDD = vectorsRDD.take(10)

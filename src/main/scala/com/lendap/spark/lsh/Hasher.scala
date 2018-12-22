@@ -34,7 +34,7 @@ object Hasher {
   def r(size: Int, seed: Long) : Array[Double] = {
     val buf = new ArrayBuffer[Double]
     val rnd = new Random(seed)
-    for (i <- 0 until size)
+    for (_ <- 0 until size)
       buf += (if (rnd.nextGaussian() < 0) -1 else 1)
     buf.toArray
   }
